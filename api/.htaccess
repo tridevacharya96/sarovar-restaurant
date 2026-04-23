@@ -1,0 +1,7 @@
+# api/.htaccess
+Options -Indexes
+
+# Allow PHP files only
+<FilesMatch "\.php$">
+    Require all granted
+</FilesMatch>

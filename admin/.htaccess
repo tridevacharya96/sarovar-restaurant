@@ -1,0 +1,13 @@
+# admin/.htaccess
+
+# Prevent directory listing
+Options -Indexes
+
+# Set default document
+DirectoryIndex index.php
+
+# No caching for admin pages
+<FilesMatch "\.php$">
+    Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+    Header set Pragma "no-cache"
+</FilesMatch>

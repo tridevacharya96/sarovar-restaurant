@@ -1,0 +1,3 @@
+# config/.htaccess
+# Block ALL direct web access to config files
+Require all denied

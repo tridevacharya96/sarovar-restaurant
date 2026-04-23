@@ -1,0 +1,12 @@
+# admin/api/.htaccess
+Options -Indexes
+
+# Block direct browser access — only allow PHP fetches (API calls from admin.js)
+<FilesMatch "\.php$">
+    Require all granted
+</FilesMatch>
+
+# Block everything else
+<FilesMatch "^(?!.*\.php$).*">
+    Require all denied
+</FilesMatch>

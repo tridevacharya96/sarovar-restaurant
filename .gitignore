@@ -1,0 +1,15 @@
+# Ignore database credentials
+config/database.php
+
+# Ignore zip files
+*.zip
+
+# Ignore temp files
+*.log
+.DS_Store
+Thumbs.db
+
+# Ignore instruction files
+setup-instruction.txt
+websiteflow.txt
+filestructure.txt
