@@ -469,18 +469,35 @@ $s = getSettings();
             <p class="section-subtitle">Real experiences from our valued customers</p>
         </div>
 
-        <!-- Rating Summary -->
+        <!-- Rating Summary Card -->
         <div class="reviews-summary" id="reviewsSummary">
             <div class="reviews-summary-left">
                 <div class="reviews-avg-score" id="reviewsAvgScore">—</div>
-                <div class="reviews-stars" id="reviewsAvgStars"></div>
-                <div class="reviews-total-count" id="reviewsTotalCount">Loading...</div>
+                <div class="reviews-stars" id="reviewsAvgStars">
+                    <i class="fas fa-star"></i><i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i><i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                </div>
+                <div class="reviews-total-count" id="reviewsTotalCount">Loading reviews...</div>
                 <a href="#" id="googleReviewLink" class="btn-google-review" target="_blank" style="display:none">
-                    <img src="https://www.gstatic.com/images/branding/product/1x/googleg_48dp.png" alt="Google" width="18" height="18"/>
+                    <img src="https://www.gstatic.com/images/branding/product/1x/googleg_48dp.png" alt="G" width="16" height="16"/>
                     Review on Google
                 </a>
             </div>
-            <div class="reviews-summary-right" id="reviewsBreakdown"></div>
+            <div class="reviews-summary-divider"></div>
+            <div class="reviews-summary-right" id="reviewsBreakdown">
+                <div class="rating-bar-row"><div class="rating-bar-label">5 ★</div><div class="rating-bar-track"><div class="rating-bar-fill" style="width:80%"></div></div><div class="rating-bar-count">—</div></div>
+                <div class="rating-bar-row"><div class="rating-bar-label">4 ★</div><div class="rating-bar-track"><div class="rating-bar-fill" style="width:0%"></div></div><div class="rating-bar-count">—</div></div>
+                <div class="rating-bar-row"><div class="rating-bar-label">3 ★</div><div class="rating-bar-track"><div class="rating-bar-fill" style="width:0%"></div></div><div class="rating-bar-count">—</div></div>
+                <div class="rating-bar-row"><div class="rating-bar-label">2 ★</div><div class="rating-bar-track"><div class="rating-bar-fill" style="width:0%"></div></div><div class="rating-bar-count">—</div></div>
+                <div class="rating-bar-row"><div class="rating-bar-label">1 ★</div><div class="rating-bar-track"><div class="rating-bar-fill" style="width:0%"></div></div><div class="rating-bar-count">—</div></div>
+            </div>
+            <div class="reviews-summary-cta">
+                <p>Share your experience</p>
+                <button class="btn btn-primary" onclick="openModal('reviewModal')">
+                    <i class="fas fa-pencil-alt"></i> Write a Review
+                </button>
+            </div>
         </div>
 
         <!-- Source Tabs -->
@@ -492,22 +509,22 @@ $s = getSettings();
                 <i class="fas fa-globe"></i> Website
             </button>
             <button class="reviews-tab" onclick="switchReviewTab('google',this)" id="googleTab">
-                <img src="https://www.gstatic.com/images/branding/product/1x/googleg_48dp.png" alt="Google" width="16" height="16"/> Google
+                <img src="https://www.gstatic.com/images/branding/product/1x/googleg_48dp.png" alt="Google" width="14" height="14" style="vertical-align:middle"/> Google
             </button>
         </div>
 
         <!-- Reviews Grid -->
         <div class="reviews-grid" id="reviewsGrid">
-            <div class="reviews-loading"><i class="fas fa-spinner fa-spin"></i> Loading reviews...</div>
+            <div class="reviews-loading" style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-light)">
+                <i class="fas fa-spinner fa-spin" style="font-size:24px;margin-bottom:12px;display:block"></i>
+                Loading reviews...
+            </div>
         </div>
 
         <!-- Load More -->
-        <div class="reviews-actions">
+        <div class="reviews-actions" style="margin-top:28px">
             <button class="btn btn-outline" id="loadMoreReviews" onclick="loadMoreReviews()" style="display:none">
-                Load More Reviews
-            </button>
-            <button class="btn btn-primary" onclick="openModal('reviewModal')">
-                <i class="fas fa-pencil-alt"></i> Write a Review
+                <i class="fas fa-chevron-down"></i> Load More Reviews
             </button>
         </div>
     </div>
