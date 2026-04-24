@@ -640,9 +640,10 @@ async function renderSettingsPage() {
         hours:   '🕐  Opening Hours',
         social:  '🌐  Social Media Links',
         seo:     '🔍  SEO & Maps',
+        payment: '💳  Payment Gateway',
     };
 
-    const groupOrder = ['general','contact','hours','social','seo'];
+    const groupOrder = ['general','contact','hours','social','payment','seo'];
 
     set('content', `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
@@ -665,6 +666,8 @@ async function renderSettingsPage() {
                 ? `<textarea id="set_${esc(s.setting_key)}" rows="3" data-key="${esc(s.setting_key)}">${esc(s.setting_val || '')}</textarea>`
                 : s.setting_key === 'google_maps_embed'
                 ? `<input id="set_${esc(s.setting_key)}" type="url" value="${esc(s.setting_val || '')}" data-key="${esc(s.setting_key)}" placeholder="https://www.google.com/maps/embed?pb=..."/>`
+                : s.setting_key === 'razorpay_key_secret'
+                ? `<input id="set_${esc(s.setting_key)}" type="password" value="${esc(s.setting_val || '')}" data-key="${esc(s.setting_key)}" placeholder="••••••••••••••••••••••••"/>`
                 : `<input id="set_${esc(s.setting_key)}" type="text" value="${esc(s.setting_val || '')}" data-key="${esc(s.setting_key)}"/>`
               }
             </div>`).join('')}

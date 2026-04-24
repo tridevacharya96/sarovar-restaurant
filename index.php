@@ -11,6 +11,8 @@ $s = getSettings();
     <title><?= setting('restaurant_name') ?> – Rourkela</title>
     <link rel="stylesheet" href="css/style.css" />
     <link rel="stylesheet" href="css/events.css"/>
+    <!-- Razorpay SDK — loaded dynamically by JS when needed -->
+    <script id="razorpay-sdk" src="https://checkout.razorpay.com/v1/checkout.js" defer></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
 </head>
@@ -66,6 +68,9 @@ $s = getSettings();
                     <a href="#" onclick="logoutUser()"><i class="fas fa-sign-out-alt"></i> Logout</a>
                 </div>
             </div>
+            <a href="admin/logout-and-login.php" class="staff-access-btn" title="Staff Access">
+                <i class="fas fa-lock"></i> Staff
+            </a>
             <button class="hamburger" id="hamburger">
                 <span></span><span></span><span></span>
             </button>

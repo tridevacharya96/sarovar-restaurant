@@ -18,6 +18,7 @@ let galleryImages = [];
 let lightboxIdx   = 0;
 let orderCategory = 'all';
 let appliedCoupon = null; // { code, discount, description }
+let paymentConfig = null; // Loaded from server — controls which gateway is active
 
 /* ============================================================
    INIT
@@ -36,6 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
     checkAuthStatus();
     updateCartUI();
     setMinDate();
+    loadPaymentConfig(); // Load gateway config from server
 });
 
 /* ============================================================
@@ -504,7 +506,6 @@ function updateCartUI() {
                 <span>Add items from the menu</span>
             </div>`;
         if (cartSummary) cartSummary.style.display = 'none';
-        appliedCoupon = null; // reset coupon when cart empties
     } else {
         cartItemsEl.innerHTML = cart.map(item => `
             <div class="cart-item">
@@ -534,18 +535,12 @@ function updateCartUI() {
     }
 
     // Update checkout summary
-    const discount = appliedCoupon ? appliedCoupon.discount : 0;
-    const finalTotal = Math.max(0, total - discount);
-
     document.getElementById('checkoutSubtotal') &&
         (document.getElementById('checkoutSubtotal').textContent = `₹${subtotal.toFixed(0)}`);
     document.getElementById('checkoutGST') &&
         (document.getElementById('checkoutGST').textContent = `₹${gst.toFixed(0)}`);
     document.getElementById('checkoutTotal') &&
-        (document.getElementById('checkoutTotal').textContent = `₹${finalTotal.toFixed(0)}`);
-    if (document.getElementById('checkoutDiscount')) {
-        document.getElementById('checkoutDiscount').textContent = `-₹${discount.toFixed(0)}`;
-    }
+        (document.getElementById('checkoutTotal').textContent = `₹${total.toFixed(0)}`);
 }
 
 function clearCart() {
@@ -869,52 +864,57 @@ function handleCheckout(e) {
     const form    = e.target;
     const btn     = form.querySelector('button[type="submit"]');
     const errorEl = document.getElementById('checkoutError');
-    const data    = new FormData(form);
 
-    if (cart.length === 0) {
-        showToast('Your cart is empty!', 'error');
-        return;
-    }
+    if (cart.length === 0) { showToast('Your cart is empty!', 'error'); return; }
 
-    const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    const gst      = subtotal * 0.05;
-    const baseTotal= subtotal + gst + 40;
-    const discount = appliedCoupon ? appliedCoupon.discount : 0;
-    const total    = Math.max(0, baseTotal - discount);
-
-    data.append('action',          'place');
-    data.append('items',           JSON.stringify(cart));
-    data.append('total_amount',    total.toFixed(2));
-    data.append('coupon_code',     appliedCoupon ? appliedCoupon.code : '');
-    data.append('discount_amount', discount.toFixed(2));
+    const subtotal      = cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
+    const gst           = subtotal * 0.05;
+    const baseTotal     = subtotal + gst + 40;
+    const discount      = appliedCoupon ? appliedCoupon.discount : 0;
+    const total         = Math.max(0, baseTotal - discount);
+    const paymentMethod = form.querySelector('[name="payment_method"]:checked')?.value || 'cod';
 
     errorEl.style.display = 'none';
+
+    // ── Build common order data ─────────────────────────────────
+    const buildOrderData = () => {
+        const fd = new FormData(form);
+        fd.set('items',           JSON.stringify(cart));
+        fd.set('total_amount',    total.toFixed(2));
+        fd.set('coupon_code',     appliedCoupon ? appliedCoupon.code : '');
+        fd.set('discount_amount', discount.toFixed(2));
+        return fd;
+    };
+
+    // ── Route by payment method ─────────────────────────────────
+    if (paymentMethod === 'cod') {
+        processCODCheckout(btn, errorEl, buildOrderData(), total);
+    } else {
+        // Online payment — check which gateway is active
+        const gateway = paymentConfig?.gateway || 'none';
+        if (gateway === 'none') {
+            errorEl.textContent   = 'Online payment is not configured yet. Please choose Cash on Delivery.';
+            errorEl.style.display = 'block';
+            return;
+        }
+        if (gateway === 'razorpay') {
+            processRazorpayCheckout(btn, errorEl, buildOrderData(), total);
+        }
+        // Add more gateways here as: else if (gateway === 'cashfree') { ... }
+    }
+}
+
+// ── COD Flow ──────────────────────────────────────────────────
+function processCODCheckout(btn, errorEl, data, total) {
+    data.append('action', 'cod');
     setButtonLoading(btn, true);
 
-    fetch(BASE_PATH + 'api/order.php', { method: 'POST', body: data, credentials: 'include' })
-        .then(res => res.json())
+    fetch(BASE_PATH + 'api/payment.php', { method: 'POST', body: data, credentials: 'include' })
+        .then(r => r.json())
         .then(result => {
             setButtonLoading(btn, false);
             if (result.success) {
-                closeModal('checkoutModal');
-                form.reset();
-
-                // Show success modal
-                document.getElementById('orderSuccessDetails').innerHTML = `
-                    <p><strong>Order ID:</strong> #${result.order_id}</p>
-                    ${appliedCoupon ? `<p><strong>Coupon Applied:</strong> ${appliedCoupon.code} (-₹${appliedCoupon.discount.toFixed(0)})</p>` : ''}
-                    <p><strong>Total:</strong> ₹${total.toFixed(0)}</p>
-                    <p><strong>Estimated Delivery:</strong> 45–60 minutes</p>
-                    <p><strong>Status:</strong> <span class="order-status status-pending">Pending</span></p>
-                `;
-                openModal('orderSuccessModal');
-
-                // Clear cart and coupon
-                cart = [];
-                appliedCoupon = null;
-                saveCart();
-                updateCartUI();
-                renderOrderItems(allMenuItems);
+                onOrderSuccess(result, total);
             } else {
                 errorEl.textContent   = result.error || 'Failed to place order.';
                 errorEl.style.display = 'block';
@@ -925,6 +925,160 @@ function handleCheckout(e) {
             errorEl.textContent   = 'Network error. Please try again.';
             errorEl.style.display = 'block';
         });
+}
+
+// ── Razorpay Flow ─────────────────────────────────────────────
+function processRazorpayCheckout(btn, errorEl, data, total) {
+    setButtonLoading(btn, true);
+
+    // Step 1: Create Razorpay order on server
+    const createData = new FormData();
+    createData.append('action', 'create_order');
+    createData.append('amount', total.toFixed(2));
+
+    fetch(BASE_PATH + 'api/payment.php', { method: 'POST', body: createData, credentials: 'include' })
+        .then(r => r.json())
+        .then(rzpOrder => {
+            setButtonLoading(btn, false);
+            if (!rzpOrder.success) {
+                errorEl.textContent   = rzpOrder.error || 'Could not initiate payment.';
+                errorEl.style.display = 'block';
+                return;
+            }
+
+            // Step 2: Open Razorpay popup
+            const cfg = paymentConfig || {};
+            const options = {
+                key:         rzpOrder.key_id,
+                amount:      rzpOrder.amount,
+                currency:    rzpOrder.currency,
+                name:        cfg.company_name  || 'The Sarovar Court',
+                description: 'Food Order',
+                image:       cfg.company_logo  || '',
+                order_id:    rzpOrder.order_id,
+                theme:       { color: cfg.company_color || '#D85A30' },
+                prefill: {
+                    name:    data.get('name')  || '',
+                    email:   data.get('email') || '',
+                    contact: data.get('phone') || '',
+                },
+                handler: function(response) {
+                    // Step 3: Verify payment on server
+                    verifyRazorpayOnServer(response, data, total, errorEl);
+                },
+                modal: {
+                    ondismiss: function() {
+                        showToast('Payment cancelled.', 'info');
+                    }
+                }
+            };
+
+            const rzp = new window.Razorpay(options);
+            rzp.on('payment.failed', function(response) {
+                errorEl.textContent   = 'Payment failed: ' + (response.error?.description || 'Unknown error');
+                errorEl.style.display = 'block';
+            });
+            rzp.open();
+        })
+        .catch(() => {
+            setButtonLoading(btn, false);
+            errorEl.textContent   = 'Network error. Please try again.';
+            errorEl.style.display = 'block';
+        });
+}
+
+// ── Razorpay Verify ───────────────────────────────────────────
+function verifyRazorpayOnServer(rzpResponse, orderData, total, errorEl) {
+    const verifyData = new FormData(orderData instanceof FormData ? undefined : null);
+    // Clone order data and append verification fields
+    const fd = new FormData();
+    for (const [key, val] of orderData.entries()) fd.append(key, val);
+    fd.set('action',                'verify');
+    fd.append('razorpay_order_id',   rzpResponse.razorpay_order_id);
+    fd.append('razorpay_payment_id', rzpResponse.razorpay_payment_id);
+    fd.append('razorpay_signature',  rzpResponse.razorpay_signature);
+
+    showToast('Verifying payment...', 'info');
+
+    fetch(BASE_PATH + 'api/payment.php', { method: 'POST', body: fd, credentials: 'include' })
+        .then(r => r.json())
+        .then(result => {
+            if (result.success) {
+                onOrderSuccess(result, total, 'Online Payment (Razorpay)');
+            } else {
+                if (errorEl) {
+                    errorEl.textContent   = result.error || 'Payment verification failed.';
+                    errorEl.style.display = 'block';
+                }
+                showToast(result.error || 'Payment verification failed.', 'error');
+            }
+        })
+        .catch(() => showToast('Verification error. Contact restaurant.', 'error'));
+}
+
+// ── Shared success handler ────────────────────────────────────
+function onOrderSuccess(result, total, paymentLabel = 'Cash on Delivery') {
+    closeModal('checkoutModal');
+    document.getElementById('checkoutForm').reset();
+
+    document.getElementById('orderSuccessDetails').innerHTML = `
+        <p><strong>Order ID:</strong> #${result.order_id}</p>
+        ${appliedCoupon ? `<p><strong>Coupon:</strong> ${appliedCoupon.code} (-₹${appliedCoupon.discount.toFixed(0)})</p>` : ''}
+        <p><strong>Total Paid:</strong> ₹${total.toFixed(0)}</p>
+        <p><strong>Payment:</strong> ${paymentLabel}</p>
+        <p><strong>Estimated Delivery:</strong> 45–60 minutes</p>
+        <p><strong>Status:</strong> <span class="order-status status-pending">Pending</span></p>
+    `;
+    openModal('orderSuccessModal');
+
+    cart = [];
+    appliedCoupon = null;
+    saveCart();
+    updateCartUI();
+    renderOrderItems(allMenuItems);
+}
+
+// ── Load payment config from server ──────────────────────────
+function loadPaymentConfig() {
+    fetch(BASE_PATH + 'api/payment.php?action=config', { credentials: 'include' })
+        .then(r => r.json())
+        .then(config => {
+            paymentConfig = config;
+            updatePaymentUI(config);
+        })
+        .catch(() => {
+            // Silently fail — COD still works without config
+            paymentConfig = { gateway: 'none', cod_enabled: true, online_enabled: false };
+        });
+}
+
+// ── Update payment options UI based on config ─────────────────
+function updatePaymentUI(config) {
+    const codRadio    = document.querySelector('[name="payment_method"][value="cod"]');
+    const onlineRadio = document.querySelector('[name="payment_method"][value="online"]');
+    const codLabel    = codRadio    ? codRadio.closest('label')    : null;
+    const onlineLabel = onlineRadio ? onlineRadio.closest('label') : null;
+
+    if (codLabel) {
+        codLabel.style.display = config.cod_enabled ? '' : 'none';
+    }
+    if (onlineLabel) {
+        if (!config.online_enabled || config.gateway === 'none') {
+            onlineLabel.style.display = 'none';
+        } else {
+            onlineLabel.style.display = '';
+            // Update label text based on active gateway
+            const icons = { razorpay: 'fa-rupee-sign', cashfree: 'fa-credit-card', payu: 'fa-wallet' };
+            const icon  = icons[config.gateway] || 'fa-mobile-alt';
+            const label = config.gateway.charAt(0).toUpperCase() + config.gateway.slice(1);
+            onlineLabel.querySelector('span').innerHTML =
+                `<i class="fas ${icon}"></i> Pay Online (${label})`;
+        }
+    }
+    // Default to COD if online is hidden
+    if (codRadio && (!config.online_enabled || config.gateway === 'none')) {
+        codRadio.checked = true;
+    }
 }
 
 /* ============================================================
@@ -1370,92 +1524,4 @@ window.addEventListener('resize', () => {
 ============================================================ */
 window.addEventListener('beforeprint', () => {
     document.querySelectorAll('.reveal').forEach(el => el.classList.add('visible'));
-});
-/* ============================================================
-   COUPON SYSTEM
-============================================================ */
-function applyCoupon() {
-    const input  = document.getElementById('couponInput');
-    const btn    = document.getElementById('applyCouponBtn');
-    const msgEl  = document.getElementById('couponMsg');
-    const code   = input.value.trim().toUpperCase();
-
-    if (!code) {
-        showCouponMsg('Please enter a coupon code', 'error');
-        return;
-    }
-
-    const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    const gst      = subtotal * 0.05;
-    const total    = subtotal + gst + 40;
-
-    btn.disabled   = true;
-    btn.textContent = '...';
-
-    const data = new FormData();
-    data.append('action',       'validate');
-    data.append('code',         code);
-    data.append('order_amount', total.toFixed(2));
-
-    fetch(BASE_PATH + 'api/coupon.php', { method: 'POST', body: data, credentials: 'include' })
-        .then(r => r.json())
-        .then(result => {
-            btn.disabled    = false;
-            btn.textContent = 'Apply';
-            if (result.success) {
-                appliedCoupon = {
-                    code:        result.code,
-                    discount:    result.discount,
-                    description: result.description,
-                };
-                // Show discount row
-                const row = document.getElementById('couponDiscountRow');
-                if (row) row.style.display = 'flex';
-                const codeDisplay = document.getElementById('couponCodeDisplay');
-                if (codeDisplay) codeDisplay.textContent = result.code;
-                showCouponMsg('🎉 ' + result.message, 'success');
-                input.disabled = true;
-                btn.textContent = 'Applied';
-                btn.disabled    = true;
-                updateCartUI();
-            } else {
-                appliedCoupon = null;
-                showCouponMsg(result.error, 'error');
-            }
-        })
-        .catch(() => {
-            btn.disabled    = false;
-            btn.textContent = 'Apply';
-            showCouponMsg('Network error. Please try again.', 'error');
-        });
-}
-
-function removeCoupon() {
-    appliedCoupon = null;
-    const input = document.getElementById('couponInput');
-    const btn   = document.getElementById('applyCouponBtn');
-    const row   = document.getElementById('couponDiscountRow');
-    const msgEl = document.getElementById('couponMsg');
-
-    if (input)  { input.value = ''; input.disabled = false; }
-    if (btn)    { btn.textContent = 'Apply'; btn.disabled = false; }
-    if (row)    row.style.display = 'none';
-    if (msgEl)  msgEl.style.display = 'none';
-
-    updateCartUI();
-    showToast('Coupon removed', 'info');
-}
-
-function showCouponMsg(msg, type) {
-    const el = document.getElementById('couponMsg');
-    if (!el) return;
-    el.textContent  = msg;
-    el.className    = `coupon-msg ${type}`;
-    el.style.display = 'block';
-}
-
-// Allow pressing Enter in coupon input
-document.addEventListener('DOMContentLoaded', () => {
-    const inp = document.getElementById('couponInput');
-    if (inp) inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); applyCoupon(); } });
 });
