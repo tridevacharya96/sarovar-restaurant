@@ -151,7 +151,7 @@
                 <div class="ev-contact-items">
                     <div class="ev-contact-item"><i class="fas fa-phone"></i><div><strong>Call Us</strong><span>+91 98765 43210</span></div></div>
                     <div class="ev-contact-item"><i class="fas fa-envelope"></i><div><strong>Email Us</strong><span>events@sarovar.com</span></div></div>
-                    <div class="ev-contact-item"><i class="fas fa-map-marker-alt"></i><div><strong>Visit Us</strong><span>Civil Township, Rourkela – 769004</span></div></div>
+                    <div class="ev-contact-item"><i class="fas fa-map-marker-alt"></i><div><strong>Visit Us</strong><span>Ispat Market, Ambagan Circle, Bank Street, Sector 19, Rourkela – 769005</span></div></div>
                 </div>
                 <div class="ev-advance-note">
                     <i class="fas fa-info-circle"></i>
