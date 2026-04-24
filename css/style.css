@@ -2313,3 +2313,25 @@ ul { list-style:none; }
     transition: color 0.15s;
 }
 .remove-coupon-btn:hover { color: #e74c3c; }
+
+/* ===== SHIPPING / DELIVERY ===== */
+.delivery-promo-msg {
+    background: linear-gradient(135deg, #e8f5e9, #f1f8e9);
+    border: 1px solid #c8e6c9;
+    border-radius: 8px;
+    padding: 9px 14px;
+    font-size: 12px;
+    color: #2e7d32;
+    font-weight: 500;
+    margin-bottom: 12px;
+    text-align: center;
+}
+.delivery-promo-banner {
+    background: var(--primary);
+    color: #fff;
+    text-align: center;
+    font-size: 12px;
+    padding: 6px 16px;
+    font-weight: 500;
+    display: none;
+}

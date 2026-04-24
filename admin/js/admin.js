@@ -948,11 +948,12 @@ async function renderSettingsPage() {
         contact: '📞  Contact & Location',
         hours:   '🕐  Opening Hours',
         social:  '🌐  Social Media Links',
-        payment: '💳  Payment Gateway',
+        payment:  '💳  Payment Gateway',
+        shipping: '🚚  Shipping & Delivery',
         seo:     '🔍  SEO & Maps',
     };
 
-    const groupOrder = ['general','contact','hours','social','payment','seo'];
+    const groupOrder = ['general','contact','hours','social','payment','shipping','seo'];
 
     set('content', `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">

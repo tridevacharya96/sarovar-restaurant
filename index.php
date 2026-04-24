@@ -911,7 +911,7 @@ $s = getSettings();
                 </div>
                 <div class="summary-row">
                     <span>Delivery</span>
-                    <span>₹40</span>
+                    <span id="checkoutDelivery">₹40</span>
                 </div>
                 <div class="summary-row">
                     <span>GST (5%)</span>
@@ -922,7 +922,8 @@ $s = getSettings();
                     <span id="checkoutTotal">₹0</span>
                 </div>
             </div>
-            <div id="checkoutError" class="form-error" style="display:none"></div>
+            <div id="deliveryPromoMsg" class="delivery-promo-msg" style="display:none"></div>
+                    <div id="checkoutError" class="form-error" style="display:none"></div>
             <button type="submit" class="btn btn-primary btn-full">
                 <i class="fas fa-check-circle"></i> Place Order
             </button>

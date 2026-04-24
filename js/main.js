@@ -18,7 +18,9 @@ let galleryImages = [];
 let lightboxIdx   = 0;
 let orderCategory = 'all';
 let appliedCoupon = null; // { code, discount, description }
-let paymentConfig = null; // Loaded from server — controls which gateway is active
+let paymentConfig  = null; // Loaded from server — controls which gateway is active
+let shippingConfig = null; // Loaded from server — controls delivery charges
+let currentDeliveryCharge = 40; // Default until config loads
 
 /* ============================================================
    INIT
@@ -37,7 +39,8 @@ document.addEventListener('DOMContentLoaded', () => {
     checkAuthStatus();
     updateCartUI();
     setMinDate();
-    loadPaymentConfig(); // Load gateway config from server
+    loadPaymentConfig();  // Load gateway config from server
+    loadShippingConfig(); // Load shipping config from server
 });
 
 /* ============================================================
@@ -459,6 +462,7 @@ function changeOrderQty(id, name, price, isVeg, delta) {
     }
     saveCart();
     updateCartUI();
+    recalculateDelivery();
     const qtyEl = document.getElementById(`qty-${id}`);
     if (qtyEl) {
         const item = cart.find(c => c.id == id);
@@ -478,6 +482,7 @@ function addToCart(id, name, price, isVeg) {
     }
     saveCart();
     updateCartUI();
+    recalculateDelivery();
     showToast(`${name} added to cart!`, 'success');
 }
 
@@ -489,7 +494,7 @@ function updateCartUI() {
     const count    = cart.reduce((sum, item) => sum + item.quantity, 0);
     const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
     const gst      = subtotal * 0.05;
-    const total    = subtotal + gst + (cart.length > 0 ? 40 : 0);
+    const total    = subtotal + gst + (cart.length > 0 ? currentDeliveryCharge : 0);
 
     // Cart count badge
     document.getElementById('cartCount').textContent = count;
@@ -531,16 +536,34 @@ function updateCartUI() {
             document.getElementById('cartSubtotal').textContent = `₹${subtotal.toFixed(0)}`;
             document.getElementById('cartGST').textContent      = `₹${gst.toFixed(0)}`;
             document.getElementById('cartTotal').textContent    = `₹${total.toFixed(0)}`;
+            // Update delivery charge display
+            const cartDeliveryEl = document.getElementById('cartDelivery');
+            if (cartDeliveryEl) {
+                cartDeliveryEl.textContent = currentDeliveryCharge === 0 ? 'Free 🎉' : `₹${currentDeliveryCharge.toFixed(0)}`;
+                cartDeliveryEl.style.color = currentDeliveryCharge === 0 ? '#1D9E75' : '';
+            }
+            // Show promo message if available
+            const promoEl = document.getElementById('deliveryPromoMsg');
+            if (promoEl && shippingConfig?.promo_message) {
+                promoEl.textContent = shippingConfig.promo_message;
+                promoEl.style.display = 'block';
+            }
         }
     }
 
     // Update checkout summary
-    document.getElementById('checkoutSubtotal') &&
-        (document.getElementById('checkoutSubtotal').textContent = `₹${subtotal.toFixed(0)}`);
-    document.getElementById('checkoutGST') &&
-        (document.getElementById('checkoutGST').textContent = `₹${gst.toFixed(0)}`);
-    document.getElementById('checkoutTotal') &&
-        (document.getElementById('checkoutTotal').textContent = `₹${total.toFixed(0)}`);
+    if (document.getElementById('checkoutSubtotal'))
+        document.getElementById('checkoutSubtotal').textContent = `₹${subtotal.toFixed(0)}`;
+    if (document.getElementById('checkoutGST'))
+        document.getElementById('checkoutGST').textContent = `₹${gst.toFixed(0)}`;
+    if (document.getElementById('checkoutTotal'))
+        document.getElementById('checkoutTotal').textContent = `₹${finalTotal.toFixed(0)}`;
+    // Update delivery row in checkout modal dynamically
+    const cdEl = document.getElementById('checkoutDelivery');
+    if (cdEl) {
+        cdEl.textContent = currentDeliveryCharge === 0 ? 'Free 🎉' : `₹${currentDeliveryCharge.toFixed(0)}`;
+        cdEl.style.color = currentDeliveryCharge === 0 ? '#1D9E75' : '';
+    }
 }
 
 function clearCart() {
@@ -869,7 +892,7 @@ function handleCheckout(e) {
 
     const subtotal      = cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
     const gst           = subtotal * 0.05;
-    const baseTotal     = subtotal + gst + 40;
+    const baseTotal     = subtotal + gst + currentDeliveryCharge;
     const discount      = appliedCoupon ? appliedCoupon.discount : 0;
     const total         = Math.max(0, baseTotal - discount);
     const paymentMethod = form.querySelector('[name="payment_method"]:checked')?.value || 'cod';
@@ -1525,3 +1548,64 @@ window.addEventListener('resize', () => {
 window.addEventListener('beforeprint', () => {
     document.querySelectorAll('.reveal').forEach(el => el.classList.add('visible'));
 });
+/* ============================================================
+   SHIPPING SYSTEM
+============================================================ */
+function loadShippingConfig() {
+    fetch(BASE_PATH + 'api/shipping.php?action=config', { credentials: 'include' })
+        .then(r => r.json())
+        .then(config => {
+            shippingConfig = config;
+            currentDeliveryCharge = config.flat_rate ?? 40;
+            updateCartUI();
+            showDeliveryPromo(config);
+        })
+        .catch(() => {
+            // Silently fail — default charge already set
+        });
+}
+
+function showDeliveryPromo(config) {
+    // Show free delivery promo banner if applicable
+    const banner = document.getElementById('deliveryPromoBanner');
+    if (!banner) return;
+    if (config.charge_type === 'free_above' && config.free_above > 0) {
+        banner.textContent = config.delivery_message ||
+            `Free delivery on orders above ₹${config.free_above}!`;
+        banner.style.display = 'block';
+    }
+}
+
+// Called every time cart changes to recalculate delivery charge live
+function recalculateDelivery() {
+    const subtotal = cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
+    if (!subtotal || !shippingConfig) return;
+
+    const data = new FormData();
+    data.append('action',   'calculate');
+    data.append('subtotal', subtotal.toFixed(2));
+    data.append('method',   'delivery');
+
+    fetch(BASE_PATH + 'api/shipping.php', { method: 'POST', body: data, credentials: 'include' })
+        .then(r => r.json())
+        .then(result => {
+            if (result.success) {
+                currentDeliveryCharge = result.charge;
+                shippingConfig.promo_message = result.promo_message || '';
+
+                // Update estimated time in checkout
+                const timeEl = document.getElementById('estimatedDeliveryTime');
+                if (timeEl) timeEl.textContent = result.estimated_time;
+
+                updateCartUI();
+
+                // Show promo message in checkout if relevant
+                const promoEl = document.getElementById('deliveryPromoMsg');
+                if (promoEl) {
+                    promoEl.textContent = result.promo_message || '';
+                    promoEl.style.display = result.promo_message ? 'block' : 'none';
+                }
+            }
+        })
+        .catch(() => {}); // Silently fail — use current charge
+}
