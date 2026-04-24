@@ -27,6 +27,10 @@ switch ($action) {
     case 'export_customers':  exportCustomers();       break;
     case 'reports':           getReports();            break;
     case 'messages':          getMessages();           break;
+    case 'coupons':           getCoupons();            break;
+    case 'add_coupon':        addCoupon();             break;
+    case 'toggle_coupon':     toggleCoupon();          break;
+    case 'delete_coupon':     deleteCoupon();          break;
     case 'get_settings':      getSettingsAdmin();      break;
     case 'save_settings':     saveSettings();          break;
     case 'event_bookings':        getEventBookings();         break;
@@ -38,11 +42,17 @@ switch ($action) {
 /* ============================================================ BADGES */
 function getBadges() {
     $conn = getConnection();
-    $pending_orders       = $conn->query("SELECT COUNT(*) c FROM orders WHERE status='pending'")->fetch_assoc()['c'];
-    $pending_reservations = $conn->query("SELECT COUNT(*) c FROM reservations WHERE status='pending'")->fetch_assoc()['c'];
-    $pending_events = $conn->query("SELECT COUNT(*) c FROM event_bookings WHERE status='pending'")->fetch_assoc()['c'];
-    $new_messages         = $conn->query("SELECT COUNT(*) c FROM contact_messages WHERE created_at >= DATE_SUB(NOW(),INTERVAL 24 HOUR)")->fetch_assoc()['c'];
-    echo json_encode(compact('pending_orders','pending_reservations','new_messages'));
+    $safe = function($sql) use ($conn) {
+        $r = $conn->query($sql);
+        if (!$r) return 0;
+        $row = $r->fetch_assoc();
+        return $row ? intval(array_values($row)[0]) : 0;
+    };
+    $pending_orders       = $safe("SELECT COUNT(*) FROM orders WHERE status='pending'");
+    $pending_reservations = $safe("SELECT COUNT(*) FROM reservations WHERE status='pending'");
+    $pending_events       = $safe("SELECT COUNT(*) FROM event_bookings WHERE status='pending'");
+    $new_messages         = $safe("SELECT COUNT(*) FROM contact_messages WHERE created_at >= DATE_SUB(NOW(),INTERVAL 24 HOUR)");
+    echo json_encode(compact('pending_orders','pending_reservations','pending_events','new_messages'));
     $conn->close();
 }
 
@@ -283,43 +293,100 @@ function getReports() {
     $conn  = getConnection();
     $month = date('Y-m');
 
+    // Safe single-value query helper — returns 0 if query fails
+    $qv = function($sql) use ($conn) {
+        $r = $conn->query($sql);
+        if (!$r) return 0;
+        $row = $r->fetch_assoc();
+        return $row ? array_values($row)[0] : 0;
+    };
+
     $stats = [
-        'month_revenue'      => floatval($conn->query("SELECT COALESCE(SUM(total_amount),0) v FROM orders WHERE DATE_FORMAT(created_at,'%Y-%m')='$month' AND status!='cancelled'")->fetch_assoc()['v']),
-        'month_orders'       => intval($conn->query("SELECT COUNT(*) c FROM orders WHERE DATE_FORMAT(created_at,'%Y-%m')='$month'")->fetch_assoc()['c']),
-        'avg_order'          => floatval($conn->query("SELECT COALESCE(AVG(total_amount),0) v FROM orders WHERE DATE_FORMAT(created_at,'%Y-%m')='$month' AND status!='cancelled'")->fetch_assoc()['v']),
-        'delivered_count'    => intval($conn->query("SELECT COUNT(*) c FROM orders WHERE DATE_FORMAT(created_at,'%Y-%m')='$month' AND status='delivered'")->fetch_assoc()['c']),
-        'cancelled_count'    => intval($conn->query("SELECT COUNT(*) c FROM orders WHERE DATE_FORMAT(created_at,'%Y-%m')='$month' AND status='cancelled'")->fetch_assoc()['c']),
-        'new_customers_month'=> intval($conn->query("SELECT COUNT(*) c FROM users WHERE DATE_FORMAT(created_at,'%Y-%m')='$month'")->fetch_assoc()['c']),
-        'month_reservations' => intval($conn->query("SELECT COUNT(*) c FROM reservations WHERE DATE_FORMAT(created_at,'%Y-%m')='$month'")->fetch_assoc()['c']),
+        'month_revenue'       => floatval($qv("SELECT COALESCE(SUM(total_amount),0) FROM orders WHERE DATE_FORMAT(created_at,'%Y-%m')='$month' AND status NOT IN ('cancelled')")),
+        'month_orders'        => intval($qv("SELECT COUNT(*) FROM orders WHERE DATE_FORMAT(created_at,'%Y-%m')='$month'")),
+        'avg_order'           => floatval($qv("SELECT COALESCE(AVG(total_amount),0) FROM orders WHERE DATE_FORMAT(created_at,'%Y-%m')='$month' AND status NOT IN ('cancelled')")),
+        'delivered_count'     => intval($qv("SELECT COUNT(*) FROM orders WHERE DATE_FORMAT(created_at,'%Y-%m')='$month' AND status='delivered'")),
+        'cancelled_count'     => intval($qv("SELECT COUNT(*) FROM orders WHERE DATE_FORMAT(created_at,'%Y-%m')='$month' AND status='cancelled'")),
+        'new_customers_month' => intval($qv("SELECT COUNT(*) FROM users WHERE DATE_FORMAT(created_at,'%Y-%m')='$month'")),
+        'month_reservations'  => intval($qv("SELECT COUNT(*) FROM reservations WHERE DATE_FORMAT(created_at,'%Y-%m')='$month'")),
+        'total_revenue'       => floatval($qv("SELECT COALESCE(SUM(total_amount),0) FROM orders WHERE status NOT IN ('cancelled')")),
+        'total_orders'        => intval($qv("SELECT COUNT(*) FROM orders")),
+        'total_customers'     => intval($qv("SELECT COUNT(*) FROM users")),
     ];
 
-    $weeklyQ = $conn->query("
-        SELECT DATE_FORMAT(created_at,'%a') day, COALESCE(SUM(total_amount),0) revenue
-        FROM orders WHERE created_at>=DATE_SUB(NOW(),INTERVAL 7 DAY) AND status!='cancelled'
-        GROUP BY DATE(created_at) ORDER BY DATE(created_at)
-    ");
-    $weekly=[];
-    while ($r=$weeklyQ->fetch_assoc()) $weekly[]=$r;
+    // Weekly revenue — last 7 days, fill every day (no missing gaps)
+    $weekly = [];
+    for ($i = 6; $i >= 0; $i--) {
+        $date    = date('Y-m-d', strtotime("-{$i} days"));
+        $label   = date('D', strtotime("-{$i} days"));
+        $revenue = floatval($qv("SELECT COALESCE(SUM(total_amount),0) FROM orders WHERE DATE(created_at)='$date' AND status NOT IN ('cancelled')"));
+        $weekly[] = ['day' => $label, 'date' => $date, 'revenue' => $revenue];
+    }
 
+    // Monthly revenue — last 6 months
+    $monthly = [];
+    for ($i = 5; $i >= 0; $i--) {
+        $m       = date('Y-m', strtotime("-{$i} months"));
+        $label   = date('M Y', strtotime("-{$i} months"));
+        $revenue = floatval($qv("SELECT COALESCE(SUM(total_amount),0) FROM orders WHERE DATE_FORMAT(created_at,'%Y-%m')='$m' AND status NOT IN ('cancelled')"));
+        $monthly[] = ['month' => $label, 'revenue' => $revenue];
+    }
+
+    // Peak hours — no CONCAT, built safely in PHP
     $peakQ = $conn->query("
-        SELECT CONCAT(HOUR(created_at),':00') label, COUNT(*) count
-        FROM orders WHERE DATE_FORMAT(created_at,'%Y-%m')='$month'
-        GROUP BY HOUR(created_at) ORDER BY count DESC LIMIT 6
+        SELECT HOUR(created_at) AS hr, COUNT(*) AS cnt
+        FROM orders
+        WHERE DATE_FORMAT(created_at,'%Y-%m')='$month'
+        GROUP BY HOUR(created_at)
+        ORDER BY cnt DESC
+        LIMIT 6
     ");
-    $peak_hours=[];
-    while ($r=$peakQ->fetch_assoc()) $peak_hours[]=['label'=>$r['label'].'-'.($r['label']+1).':00','count'=>$r['count']];
+    $peak_hours = [];
+    if ($peakQ) {
+        while ($r = $peakQ->fetch_assoc()) {
+            $hr  = intval($r['hr']);
+            $hr2 = $hr + 1;
+            $h1  = ($hr  % 12 === 0) ? 12 : $hr  % 12;
+            $h2  = ($hr2 % 12 === 0) ? 12 : $hr2 % 12;
+            $a1  = $hr  >= 12 ? 'PM' : 'AM';
+            $a2  = $hr2 >= 12 ? 'PM' : 'AM';
+            $peak_hours[] = ['label' => "{$h1}{$a1}–{$h2}{$a2}", 'count' => intval($r['cnt'])];
+        }
+    }
 
+    // Top items this month
     $topQ = $conn->query("
-        SELECT m.name, SUM(oi.quantity*oi.price) revenue
-        FROM order_items oi JOIN menu_items m ON oi.menu_item_id=m.id
-        JOIN orders o ON oi.order_id=o.id
-        WHERE DATE_FORMAT(o.created_at,'%Y-%m')='$month' AND o.status!='cancelled'
-        GROUP BY m.id ORDER BY revenue DESC LIMIT 6
+        SELECT m.name, COALESCE(SUM(oi.quantity * oi.price), 0) AS revenue, SUM(oi.quantity) AS qty
+        FROM order_items oi
+        JOIN menu_items m ON oi.menu_item_id = m.id
+        JOIN orders o     ON oi.order_id = o.id
+        WHERE DATE_FORMAT(o.created_at,'%Y-%m') = '$month'
+          AND o.status NOT IN ('cancelled')
+        GROUP BY m.id
+        ORDER BY revenue DESC
+        LIMIT 6
     ");
-    $top_items=[];
-    while ($r=$topQ->fetch_assoc()) $top_items[]=$r;
+    $top_items = [];
+    if ($topQ) while ($r = $topQ->fetch_assoc()) $top_items[] = $r;
 
-    echo json_encode(compact('stats','weekly','peak_hours','top_items'));
+    // Order status breakdown
+    $sbQ = $conn->query("
+        SELECT status, COUNT(*) AS cnt
+        FROM orders
+        WHERE DATE_FORMAT(created_at,'%Y-%m') = '$month'
+        GROUP BY status
+    ");
+    $status_breakdown = [];
+    if ($sbQ) while ($r = $sbQ->fetch_assoc()) $status_breakdown[$r['status']] = intval($r['cnt']);
+
+    echo json_encode([
+        'stats'            => $stats,
+        'weekly'           => $weekly,
+        'monthly'          => $monthly,
+        'peak_hours'       => $peak_hours,
+        'top_items'        => $top_items,
+        'status_breakdown' => $status_breakdown,
+    ]);
     $conn->close();
 }
 
@@ -333,9 +400,121 @@ function getMessages() {
     $conn->close();
 }
 
+/* ============================================================ EVENT BOOKINGS */
+function getEventBookings() {
+    $conn   = getConnection();
+    // Check table exists first
+    $check = $conn->query("SHOW TABLES LIKE 'event_bookings'");
+    if (!$check || $check->num_rows === 0) {
+        echo json_encode(['error' => 'event_bookings table not found. Please run events_setup.sql first.']);
+        $conn->close(); return;
+    }
+    $filter = $_GET['filter'] ?? 'all';
+    $where  = $filter !== 'all' ? "WHERE eb.status='".mysqli_real_escape_string($conn,$filter)."'" : '';
+    $q = $conn->query("
+        SELECT eb.*, ep.name pkg_display_name
+        FROM event_bookings eb
+        LEFT JOIN event_packages ep ON eb.package_id = ep.id
+        $where
+        ORDER BY eb.created_at DESC LIMIT 200
+    ");
+    $rows = [];
+    if ($q) while ($r = $q->fetch_assoc()) $rows[] = $r;
+    echo json_encode($rows);
+    $conn->close();
+}
+
+function updateEventBooking() {
+    $conn       = getConnection();
+    $id         = intval($_POST['booking_id']  ?? 0);
+    $status     = mysqli_real_escape_string($conn, $_POST['status']      ?? '');
+    $adminNotes = mysqli_real_escape_string($conn, $_POST['admin_notes'] ?? '');
+    $allowed    = ['pending','confirmed','cancelled','completed'];
+    if (!in_array($status, $allowed)) { echo json_encode(['error'=>'Invalid status']); return; }
+    $conn->query("UPDATE event_bookings SET status='$status', admin_notes='$adminNotes' WHERE id=$id");
+    echo json_encode(['success' => true]);
+    $conn->close();
+}
+
+function getEventBookingStats() {
+    $conn  = getConnection();
+    // Check table exists
+    $check = $conn->query("SHOW TABLES LIKE 'event_bookings'");
+    if (!$check || $check->num_rows === 0) {
+        echo json_encode(['total'=>0,'pending'=>0,'confirmed'=>0,'month'=>0,'revenue'=>0]);
+        $conn->close(); return;
+    }
+    $month = date('Y-m');
+    $safe  = function($sql) use ($conn) {
+        $r = $conn->query($sql);
+        if (!$r) return 0;
+        $row = $r->fetch_assoc();
+        return $row ? array_values($row)[0] : 0;
+    };
+    $stats = [
+        'total'     => intval($safe("SELECT COUNT(*) FROM event_bookings")),
+        'pending'   => intval($safe("SELECT COUNT(*) FROM event_bookings WHERE status='pending'")),
+        'confirmed' => intval($safe("SELECT COUNT(*) FROM event_bookings WHERE status='confirmed'")),
+        'month'     => intval($safe("SELECT COUNT(*) FROM event_bookings WHERE DATE_FORMAT(created_at,'%Y-%m')='$month'")),
+        'revenue'   => floatval($safe("SELECT COALESCE(SUM(package_price),0) FROM event_bookings WHERE status NOT IN ('cancelled') AND DATE_FORMAT(created_at,'%Y-%m')='$month'")),
+    ];
+    echo json_encode($stats);
+    $conn->close();
+}
+
+/* ============================================================ COUPONS */
+function getCoupons() {
+    $conn = getConnection();
+    $check = $conn->query("SHOW TABLES LIKE 'coupons'");
+    if (!$check || $check->num_rows === 0) { echo json_encode([]); $conn->close(); return; }
+    $q = $conn->query("SELECT * FROM coupons ORDER BY created_at DESC");
+    $rows = [];
+    while ($r = $q->fetch_assoc()) $rows[] = $r;
+    echo json_encode($rows);
+    $conn->close();
+}
+
+function addCoupon() {
+    $conn        = getConnection();
+    $code        = strtoupper(trim($_POST['code']            ?? ''));
+    $desc        = trim($_POST['description']                ?? '');
+    $type        = $_POST['discount_type']                   ?? 'percentage';
+    $value       = floatval($_POST['discount_value']         ?? 0);
+    $minOrder    = floatval($_POST['min_order_value']        ?? 0);
+    $maxDiscount = ($_POST['max_discount']  !== '' && isset($_POST['max_discount']))  ? floatval($_POST['max_discount'])  : null;
+    $usageLimit  = ($_POST['usage_limit']   !== '' && isset($_POST['usage_limit']))   ? intval($_POST['usage_limit'])     : null;
+    $validFrom   = ($_POST['valid_from']    !== '' && isset($_POST['valid_from']))     ? $_POST['valid_from']              : null;
+    $validUntil  = ($_POST['valid_until']   !== '' && isset($_POST['valid_until']))    ? $_POST['valid_until']             : null;
+
+    if (!$code || !$value) { echo json_encode(['error' => 'Code and discount value are required']); return; }
+
+    $stmt = $conn->prepare("INSERT INTO coupons (code, description, discount_type, discount_value, min_order_value, max_discount, usage_limit, valid_from, valid_until) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param("sssdddiss", $code, $desc, $type, $value, $minOrder, $maxDiscount, $usageLimit, $validFrom, $validUntil);
+    if ($stmt->execute()) echo json_encode(['success' => true, 'message' => 'Coupon created']);
+    else echo json_encode(['error' => 'Code already exists or invalid data']);
+    $conn->close();
+}
+
+function toggleCoupon() {
+    $conn = getConnection();
+    $id   = intval($_POST['coupon_id'] ?? 0);
+    $val  = intval($_POST['is_active'] ?? 0);
+    $conn->query("UPDATE coupons SET is_active=$val WHERE id=$id");
+    echo json_encode(['success' => true]);
+    $conn->close();
+}
+
+function deleteCoupon() {
+    $conn = getConnection();
+    $id   = intval($_POST['coupon_id'] ?? 0);
+    $conn->query("DELETE FROM coupons WHERE id=$id");
+    echo json_encode(['success' => true]);
+    $conn->close();
+}
+
 /* ============================================================ SITE SETTINGS */
 function getSettingsAdmin() {
-    $conn = getConnection();
+    $conn  = getConnection();
     $check = $conn->query("SHOW TABLES LIKE 'site_settings'");
     if (!$check || $check->num_rows === 0) {
         echo json_encode(['error' => 'Settings table not found. Please run settings_setup.sql first.']);
@@ -352,11 +531,10 @@ function saveSettings() {
     $conn     = getConnection();
     $settings = json_decode($_POST['settings'] ?? '{}', true);
     if (!$settings) { echo json_encode(['error' => 'No settings data received']); return; }
-
-    $stmt = $conn->prepare("UPDATE site_settings SET setting_val = ? WHERE setting_key = ?");
+    $stmt  = $conn->prepare("UPDATE site_settings SET setting_val = ? WHERE setting_key = ?");
     $saved = 0;
     foreach ($settings as $key => $val) {
-        $key = preg_replace('/[^a-z0-9_]/', '', $key); // sanitize key
+        $key = preg_replace('/[^a-z0-9_]/', '', $key);
         $stmt->bind_param("ss", $val, $key);
         if ($stmt->execute()) $saved++;
     }

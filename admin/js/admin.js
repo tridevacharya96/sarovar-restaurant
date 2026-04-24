@@ -454,55 +454,93 @@ function exportCSV() { window.open(API+'?action=export_customers','_blank'); }
 /* ============================================================ REPORTS */
 async function renderReportsPage() {
     const data = await apiFetch('reports');
-    if (!data) return;
-    const s = data.stats;
+    if (!data || data.error) {
+        set('content', `<div class="empty-state" style="padding:80px 20px">
+            <i class="fas fa-exclamation-circle" style="font-size:36px;margin-bottom:12px;display:block;color:#f09595"></i>
+            <p style="font-size:14px">${esc(data?.error||'Failed to load reports. Check your database.')}</p>
+            <button class="btn btn-ghost" style="margin-top:16px" onclick="loadPage('reports')">
+                <i class="fas fa-sync-alt"></i> Retry
+            </button>
+        </div>`);
+        return;
+    }
+    const s  = data.stats || {};
+    const sb = data.status_breakdown || {};
     set('content',`
     <div class="metrics">
       <div class="metric"><div class="metric-accent" style="background:#D85A30"></div>
-        <div class="metric-label">Monthly revenue</div><div class="metric-value">₹${fmtNum(s.month_revenue)}</div>
-        <div class="metric-trend trend-up"><i class="fas fa-chart-line"></i> ${s.month_orders} orders</div>
+        <div class="metric-label">Monthly revenue</div>
+        <div class="metric-value">₹${fmtNum(s.month_revenue||0)}</div>
+        <div class="metric-trend trend-up"><i class="fas fa-chart-line"></i> ${s.month_orders||0} orders this month</div>
       </div>
       <div class="metric"><div class="metric-accent" style="background:#378ADD"></div>
-        <div class="metric-label">Avg. order value</div><div class="metric-value">₹${fmtNum(s.avg_order)}</div>
-        <div class="metric-trend trend-up"><i class="fas fa-arrow-up"></i> This month</div>
+        <div class="metric-label">Avg. order value</div>
+        <div class="metric-value">₹${fmtNum(s.avg_order||0)}</div>
+        <div class="metric-trend"><i class="fas fa-info-circle"></i> This month</div>
       </div>
       <div class="metric"><div class="metric-accent" style="background:#1D9E75"></div>
-        <div class="metric-label">Delivered</div><div class="metric-value">${s.delivered_count}</div>
+        <div class="metric-label">Delivered</div>
+        <div class="metric-value">${s.delivered_count||0}</div>
         <div class="metric-trend trend-up"><i class="fas fa-check"></i> Successfully delivered</div>
       </div>
       <div class="metric"><div class="metric-accent" style="background:#E24B4A"></div>
-        <div class="metric-label">Cancelled</div><div class="metric-value">${s.cancelled_count}</div>
+        <div class="metric-label">Cancelled</div>
+        <div class="metric-value">${s.cancelled_count||0}</div>
         <div class="metric-trend trend-down"><i class="fas fa-times"></i> This month</div>
       </div>
     </div>
     <div class="grid2">
       <div class="card">
-        <div class="card-header"><div class="card-title">Weekly revenue</div></div>
-        <div class="week-chart" id="weekChart"></div>
+        <div class="card-header"><div class="card-title">Weekly revenue (last 7 days)</div></div>
+        <div class="week-chart" id="weekChart">
+          <div class="empty-state"><i class="fas fa-chart-bar"></i><p>No orders in the last 7 days</p></div>
+        </div>
       </div>
       <div class="card">
-        <div class="card-header"><div class="card-title">Peak hours</div></div>
-        <div id="peakBars"></div>
+        <div class="card-header"><div class="card-title">Peak hours this month</div></div>
+        <div id="peakBars">
+          <div class="empty-state"><i class="fas fa-clock"></i><p>No orders this month yet</p></div>
+        </div>
       </div>
     </div>
     <div class="grid2">
       <div class="card">
         <div class="card-header"><div class="card-title">Monthly summary</div></div>
-        <div class="kpi-row"><div class="kpi-label">Total orders</div><div class="kpi-val">${s.month_orders}</div></div>
-        <div class="kpi-row"><div class="kpi-label">Total revenue</div><div class="kpi-val">₹${fmtNum(s.month_revenue)}</div></div>
-        <div class="kpi-row"><div class="kpi-label">Avg. order value</div><div class="kpi-val">₹${fmtNum(s.avg_order)}</div></div>
-        <div class="kpi-row"><div class="kpi-label">New customers</div><div class="kpi-val">${s.new_customers_month}</div></div>
-        <div class="kpi-row"><div class="kpi-label">Reservations</div><div class="kpi-val">${s.month_reservations}</div></div>
+        <div class="kpi-row"><div class="kpi-label">Total orders</div><div class="kpi-val">${s.month_orders||0}</div></div>
+        <div class="kpi-row"><div class="kpi-label">Total revenue</div><div class="kpi-val">₹${fmtNum(s.month_revenue||0)}</div></div>
+        <div class="kpi-row"><div class="kpi-label">Avg. order value</div><div class="kpi-val">₹${fmtNum(s.avg_order||0)}</div></div>
+        <div class="kpi-row"><div class="kpi-label">New customers</div><div class="kpi-val">${s.new_customers_month||0}</div></div>
+        <div class="kpi-row"><div class="kpi-label">Reservations</div><div class="kpi-val">${s.month_reservations||0}</div></div>
+        <div class="kpi-row"><div class="kpi-label">Confirmed</div><div class="kpi-val">${sb.confirmed||0}</div></div>
+        <div class="kpi-row"><div class="kpi-label">Preparing</div><div class="kpi-val">${sb.preparing||0}</div></div>
+        <div class="kpi-row"><div class="kpi-label">Out for delivery</div><div class="kpi-val">${sb.out_for_delivery||0}</div></div>
       </div>
       <div class="card">
         <div class="card-header"><div class="card-title">Top items this month</div></div>
-        <div id="topItemsReport"></div>
+        <div id="topItemsReport">
+          <div class="empty-state"><p>No orders this month yet</p></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">6-month revenue trend</div></div>
+      <div id="monthlyChart" style="display:flex;align-items:flex-end;gap:10px;height:130px;padding-top:12px">
+        <div class="empty-state"><p>No data available</p></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">All-time stats</div></div>
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr))">
+        <div class="kpi-row" style="padding:14px"><div class="kpi-label">Total revenue</div><div class="kpi-val">₹${fmtNum(s.total_revenue||0)}</div></div>
+        <div class="kpi-row" style="padding:14px;border-left:0.5px solid rgba(255,255,255,0.06)"><div class="kpi-label">Total orders</div><div class="kpi-val">${s.total_orders||0}</div></div>
+        <div class="kpi-row" style="padding:14px;border-left:0.5px solid rgba(255,255,255,0.06)"><div class="kpi-label">Total customers</div><div class="kpi-val">${s.total_customers||0}</div></div>
       </div>
     </div>`);
 
-    renderWeekChart(data.weekly);
-    renderPeakBars(data.peak_hours);
-    renderTopBars2(data.top_items);
+    renderWeekChart(data.weekly||[]);
+    renderPeakBars(data.peak_hours||[]);
+    renderTopBars2(data.top_items||[]);
+    renderMonthlyChart(data.monthly||[]);
 }
 
 function renderWeekChart(weekly) {
@@ -518,8 +556,8 @@ function renderWeekChart(weekly) {
 }
 
 function renderPeakBars(peaks) {
-    if (!peaks || !peaks.length) { set('peakBars','<div class="empty-state"><p>No data</p></div>'); return; }
-    const max = Math.max(...peaks.map(p=>parseInt(p.count)));
+    if (!peaks || !peaks.length) { set('peakBars','<div class="empty-state"><i class="fas fa-clock"></i><p>No orders this month yet</p></div>'); return; }
+    const max = Math.max(...peaks.map(p=>parseInt(p.count||0)))||1;
     set('peakBars', peaks.map(p=>`
     <div class="bar-row">
       <div class="bar-label">${esc(p.label)}</div>
@@ -530,8 +568,8 @@ function renderPeakBars(peaks) {
 }
 
 function renderTopBars2(items) {
-    if (!items || !items.length) { set('topItemsReport','<div class="empty-state"><p>No data</p></div>'); return; }
-    const max = Math.max(...items.map(i=>parseFloat(i.revenue)));
+    if (!items || !items.length) { set('topItemsReport','<div class="empty-state"><p>No orders this month yet</p></div>'); return; }
+    const max = Math.max(...items.map(i=>parseFloat(i.revenue||0)))||1;
     set('topItemsReport', items.map(i=>`
     <div class="bar-row">
       <div class="bar-label">${esc(i.name)}</div>
@@ -539,6 +577,23 @@ function renderTopBars2(items) {
       <div class="bar-val">₹${fmtNum(i.revenue)}</div>
     </div>`).join(''));
     setTimeout(()=>document.querySelectorAll('#topItemsReport .bar-fill').forEach(b=>b.style.width=b.dataset.pct+'%'),50);
+}
+
+function renderMonthlyChart(monthly) {
+    const el = document.getElementById('monthlyChart');
+    if (!el) return;
+    if (!monthly || !monthly.length) return;
+    const max = Math.max(...monthly.map(m=>parseFloat(m.revenue||0)))||1;
+    const colors = ['#3a2018','#5c3020','#8b4a2a','#b35c30','#D85A30','#993C1D'];
+    el.innerHTML = monthly.map((m,i)=>`
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px">
+      <div style="font-size:10px;color:rgba(255,255,255,0.4);text-align:center">₹${fmtNum(m.revenue)}</div>
+      <div class="week-bar" style="height:0;background:${colors[i]};width:100%;border-radius:3px 3px 0 0"
+           data-h="${(parseFloat(m.revenue||0)/max*90).toFixed(0)}"
+           title="₹${fmtNum(m.revenue)}"></div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.3);text-align:center;white-space:nowrap">${esc(m.month)}</div>
+    </div>`).join('');
+    setTimeout(()=>el.querySelectorAll('.week-bar').forEach(b=>b.style.height=b.dataset.h+'px'),50);
 }
 
 /* ============================================================ MESSAGES */
@@ -613,6 +668,260 @@ function pill(s) { return `<span class="pill pill-${s}">${fmtStatus(s)}</span>`;
 function menuEmoji(cat) { const m={'Starters':'🥗','Main Course':'🍛','Breads':'🫓','Rice & Biryani':'🍚','Desserts':'🍮','Beverages':'🥤'}; return m[cat]||'🍽️'; }
 function debounce(fn, ms) { let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; }
 
+/* ============================================================ EVENT BOOKINGS */
+async function renderEventsPage() {
+    const [data, stats] = await Promise.all([
+        apiFetch('event_bookings', {filter:'all'}),
+        apiFetch('event_booking_stats')
+    ]);
+
+    if (!data || (data.error)) {
+        const msg = data?.error || 'Failed to load event bookings.';
+        const needsSQL = msg.includes('events_setup.sql');
+        set('content', `<div class="empty-state" style="padding:80px 20px">
+            <i class="fas fa-calendar-times" style="font-size:36px;margin-bottom:12px;display:block;color:#f09595"></i>
+            <p style="font-size:14px;margin-bottom:8px">${esc(msg)}</p>
+            ${needsSQL ? `<p style="font-size:12px;color:rgba(255,255,255,0.3);margin-bottom:16px">Run <strong>events_setup.sql</strong> in phpMyAdmin to create the required tables.</p>` : ''}
+            <button class="btn btn-ghost" style="margin-top:8px" onclick="loadPage('events')">
+                <i class="fas fa-sync-alt"></i> Retry
+            </button>
+        </div>`);
+        return;
+    }
+
+    const s  = stats || {};
+    const evtTypeMap = {wedding:'Wedding',birthday:'Birthday',corporate:'Corporate',engagement:'Engagement',anniversary:'Anniversary',other:'Other'};
+
+    set('content', `
+    <div class="metrics" style="margin-bottom:16px">
+      <div class="metric"><div class="metric-accent" style="background:#7F77DD"></div>
+        <div class="metric-label">Total bookings</div><div class="metric-value">${s.total||0}</div></div>
+      <div class="metric"><div class="metric-accent" style="background:#EF9F27"></div>
+        <div class="metric-label">Pending</div><div class="metric-value">${s.pending||0}</div>
+        <div class="metric-trend trend-neutral">Awaiting confirmation</div></div>
+      <div class="metric"><div class="metric-accent" style="background:#1D9E75"></div>
+        <div class="metric-label">Confirmed</div><div class="metric-value">${s.confirmed||0}</div></div>
+      <div class="metric"><div class="metric-accent" style="background:#D85A30"></div>
+        <div class="metric-label">Month revenue</div>
+        <div class="metric-value">₹${fmtNum(s.revenue||0)}</div></div>
+    </div>
+    <div class="filter-row" id="evtFilters">
+      ${['all','pending','confirmed','cancelled','completed'].map(f=>
+        `<div class="filter-chip ${f==='all'?'active':''}" onclick="filterEvtBookings('${f}',this)">${fmtStatus(f)||'All'}</div>`
+      ).join('')}
+    </div>
+    <div class="table-wrap">
+      <table class="admin-table">
+        <thead><tr>
+          <th style="width:110px">Ref</th>
+          <th style="width:120px">Name</th>
+          <th style="width:100px">Phone</th>
+          <th style="width:90px">Event type</th>
+          <th style="width:100px">Date</th>
+          <th style="width:80px">Guests</th>
+          <th>Package</th>
+          <th style="width:100px">Status</th>
+          <th style="width:85px">Action</th>
+        </tr></thead>
+        <tbody id="evtTbody">${renderEvtRows(data)}</tbody>
+      </table>
+    </div>`);
+}
+
+function renderEvtRows(data) {
+    const evtTypeMap = {wedding:'Wedding',birthday:'Birthday',corporate:'Corporate',engagement:'Engagement',anniversary:'Anniversary',other:'Other'};
+    if (!data || !data.length) return '<tr><td colspan="9" style="text-align:center;padding:32px;color:rgba(255,255,255,0.2)">No event bookings found</td></tr>';
+    return data.map(b=>`<tr>
+      <td class="bold">${esc(b.booking_ref)}</td>
+      <td>${esc(b.name)}</td>
+      <td>${esc(b.phone)}</td>
+      <td>${evtTypeMap[b.event_type]||b.event_type}</td>
+      <td>${b.event_date||'—'}</td>
+      <td>${esc(b.guest_count)}</td>
+      <td>${b.package_name ? esc(b.package_name)+' — ₹'+fmtNum(b.package_price) : 'Custom / No package'}</td>
+      <td>${pill(b.status)}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="openUpdateEvtBooking(${b.id},'${b.status}',\`${esc(b.admin_notes||'')}\`)">
+        <i class="fas fa-edit"></i> Update</button></td>
+    </tr>`).join('');
+}
+
+async function filterEvtBookings(filter, el) {
+    document.querySelectorAll('#evtFilters .filter-chip').forEach(c=>c.classList.remove('active'));
+    el.classList.add('active');
+    const data = await apiFetch('event_bookings', {filter});
+    const tb = document.getElementById('evtTbody');
+    if (tb && data && !data.error) tb.innerHTML = renderEvtRows(data);
+}
+
+function openUpdateEvtBooking(id, currentStatus, notes) {
+    document.getElementById('modalBox').innerHTML = `
+    <h3><i class="fas fa-calendar-edit"></i> Update Event Booking #${id}</h3>
+    <div class="form-group" style="margin-bottom:14px">
+      <label>Status</label>
+      <select id="evtStatus">
+        ${['pending','confirmed','cancelled','completed'].map(s=>
+          `<option value="${s}" ${s===currentStatus?'selected':''}>${s.charAt(0).toUpperCase()+s.slice(1)}</option>`
+        ).join('')}
+      </select>
+    </div>
+    <div class="form-group" style="margin-bottom:18px">
+      <label>Admin notes (visible to customer)</label>
+      <textarea id="evtNotes" rows="3">${notes}</textarea>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEvtBooking(${id})"><i class="fas fa-check"></i> Save</button>
+    </div>`;
+    openModal();
+}
+
+async function saveEvtBooking(id) {
+    const res = await apiPost('update_event_booking', {
+        booking_id:  id,
+        status:      document.getElementById('evtStatus').value,
+        admin_notes: document.getElementById('evtNotes').value,
+    });
+    if (res && res.success) {
+        toast('Booking updated', 'success');
+        closeModal();
+        loadBadges();
+        renderEventsPage();
+    } else {
+        toast(res?.error || 'Failed to update', 'error');
+    }
+}
+
+/* ============================================================ COUPONS */
+async function renderCouponsPage() {
+    const data = await apiFetch('coupons');
+    if (!data) return;
+
+    set('content', `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div style="font-size:13px;color:rgba(255,255,255,0.4)">${data.length} coupon${data.length!==1?'s':''} total</div>
+      <button class="btn btn-primary" onclick="openAddCoupon()"><i class="fas fa-plus"></i> Create coupon</button>
+    </div>
+    <div class="table-wrap">
+      <table class="admin-table">
+        <thead><tr>
+          <th>Code</th><th>Description</th><th>Discount</th>
+          <th>Min order</th><th>Used</th><th>Expires</th><th>Status</th><th>Action</th>
+        </tr></thead>
+        <tbody>${data.map(c=>`<tr>
+          <td class="bold" style="letter-spacing:0.05em">${esc(c.code)}</td>
+          <td style="font-size:12px">${esc(c.description||'—')}</td>
+          <td>${c.discount_type==='percentage'
+              ? `<span style="color:#D85A30;font-weight:500">${c.discount_value}% off</span>${c.max_discount?`<span style="font-size:11px;color:rgba(255,255,255,0.35)"> (max ₹${fmtNum(c.max_discount)})</span>`:''}`
+              : `<span style="color:#1D9E75;font-weight:500">₹${fmtNum(c.discount_value)} flat</span>`}
+          </td>
+          <td>₹${fmtNum(c.min_order_value||0)}</td>
+          <td>${c.used_count}${c.usage_limit?`/${c.usage_limit}`:''}</td>
+          <td style="font-size:12px">${c.valid_until||'No expiry'}</td>
+          <td>${c.is_active==1
+              ? '<span class="pill pill-delivered">Active</span>'
+              : '<span class="pill pill-cancelled">Inactive</span>'}</td>
+          <td style="display:flex;gap:5px">
+            <button class="btn btn-${c.is_active==1?'danger':'success'} btn-sm"
+              onclick="toggleCoupon(${c.id},${c.is_active==1?0:1})">
+              ${c.is_active==1?'Disable':'Enable'}
+            </button>
+            <button class="btn btn-danger btn-sm" onclick="deleteCoupon(${c.id},'${esc(c.code)}')">
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        </tr>`).join('')}
+        ${!data.length?'<tr><td colspan="8" style="text-align:center;padding:32px;color:rgba(255,255,255,0.2)">No coupons yet. Create your first one!</td></tr>':''}
+        </tbody>
+      </table>
+    </div>`);
+}
+
+function openAddCoupon() {
+    document.getElementById('modalBox').innerHTML = `
+    <h3><i class="fas fa-tag"></i> Create New Coupon</h3>
+    <div class="form-grid">
+      <div class="form-group"><label>Coupon Code *</label>
+        <input id="cCode" placeholder="e.g. SAROVAR20" style="text-transform:uppercase"/>
+      </div>
+      <div class="form-group"><label>Discount Type *</label>
+        <select id="cType" onchange="toggleMaxDiscount()">
+          <option value="percentage">Percentage (%)</option>
+          <option value="flat">Flat Amount (₹)</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Discount Value *</label>
+        <input id="cValue" type="number" placeholder="e.g. 20" min="1"/>
+      </div>
+      <div class="form-group"><label>Min Order Value (₹)</label>
+        <input id="cMinOrder" type="number" placeholder="0" min="0"/>
+      </div>
+      <div class="form-group" id="maxDiscountGroup"><label>Max Discount (₹) — optional</label>
+        <input id="cMaxDiscount" type="number" placeholder="Leave blank for no limit"/>
+      </div>
+      <div class="form-group"><label>Usage Limit — optional</label>
+        <input id="cUsageLimit" type="number" placeholder="Leave blank for unlimited"/>
+      </div>
+      <div class="form-group"><label>Valid From — optional</label>
+        <input id="cValidFrom" type="date"/>
+      </div>
+      <div class="form-group"><label>Valid Until — optional</label>
+        <input id="cValidUntil" type="date"/>
+      </div>
+      <div class="form-group form-full"><label>Description</label>
+        <input id="cDesc" placeholder="e.g. Get 20% off on your first order"/>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCoupon()"><i class="fas fa-save"></i> Create Coupon</button>
+    </div>`;
+    openModal();
+}
+
+function toggleMaxDiscount() {
+    const type  = document.getElementById('cType').value;
+    const group = document.getElementById('maxDiscountGroup');
+    if (group) group.style.display = type === 'percentage' ? '' : 'none';
+}
+
+async function saveCoupon() {
+    const res = await apiPost('add_coupon', {
+        code:           document.getElementById('cCode').value.trim().toUpperCase(),
+        description:    document.getElementById('cDesc').value.trim(),
+        discount_type:  document.getElementById('cType').value,
+        discount_value: document.getElementById('cValue').value,
+        min_order_value:document.getElementById('cMinOrder').value || '0',
+        max_discount:   document.getElementById('cMaxDiscount').value,
+        usage_limit:    document.getElementById('cUsageLimit').value,
+        valid_from:     document.getElementById('cValidFrom').value,
+        valid_until:    document.getElementById('cValidUntil').value,
+    });
+    if (res && res.success) {
+        toast('Coupon created successfully!', 'success');
+        closeModal();
+        renderCouponsPage();
+    } else {
+        toast(res?.error || 'Failed to create coupon', 'error');
+    }
+}
+
+async function toggleCoupon(id, newVal) {
+    const res = await apiPost('toggle_coupon', {coupon_id: id, is_active: newVal});
+    if (res && res.success) {
+        toast(newVal ? 'Coupon enabled' : 'Coupon disabled', 'success');
+        renderCouponsPage();
+    }
+}
+
+async function deleteCoupon(id, code) {
+    if (!confirm(`Delete coupon "${code}"? This cannot be undone.`)) return;
+    const res = await apiPost('delete_coupon', {coupon_id: id});
+    if (res && res.success) {
+        toast('Coupon deleted', 'info');
+        renderCouponsPage();
+    }
+}
+
 /* ============================================================ SITE SETTINGS */
 async function renderSettingsPage() {
     const data = await apiFetch('get_settings');
@@ -639,8 +948,8 @@ async function renderSettingsPage() {
         contact: '📞  Contact & Location',
         hours:   '🕐  Opening Hours',
         social:  '🌐  Social Media Links',
-        seo:     '🔍  SEO & Maps',
         payment: '💳  Payment Gateway',
+        seo:     '🔍  SEO & Maps',
     };
 
     const groupOrder = ['general','contact','hours','social','payment','seo'];
@@ -660,14 +969,14 @@ async function renderSettingsPage() {
         <div id="grp-${g}" style="display:block">
           <div class="form-grid" style="margin-top:4px">
             ${groups[g].map(s => `
-            <div class="form-group ${s.setting_key === 'about_text_1' || s.setting_key === 'about_text_2' || s.setting_key === 'meta_description' || s.setting_key === 'google_maps_embed' ? 'form-full' : ''}">
+            <div class="form-group ${['about_text_1','about_text_2','meta_description','google_maps_embed'].includes(s.setting_key) ? 'form-full' : ''}">
               <label>${esc(s.label)}</label>
-              ${s.setting_key === 'about_text_1' || s.setting_key === 'about_text_2' || s.setting_key === 'meta_description'
+              ${['about_text_1','about_text_2','meta_description'].includes(s.setting_key)
                 ? `<textarea id="set_${esc(s.setting_key)}" rows="3" data-key="${esc(s.setting_key)}">${esc(s.setting_val || '')}</textarea>`
                 : s.setting_key === 'google_maps_embed'
                 ? `<input id="set_${esc(s.setting_key)}" type="url" value="${esc(s.setting_val || '')}" data-key="${esc(s.setting_key)}" placeholder="https://www.google.com/maps/embed?pb=..."/>`
                 : s.setting_key === 'razorpay_key_secret'
-                ? `<input id="set_${esc(s.setting_key)}" type="password" value="${esc(s.setting_val || '')}" data-key="${esc(s.setting_key)}" placeholder="••••••••••••••••••••••••"/>`
+                ? `<input id="set_${esc(s.setting_key)}" type="password" value="${esc(s.setting_val || '')}" data-key="${esc(s.setting_key)}" placeholder="••••••••••••••••••••"/>`
                 : `<input id="set_${esc(s.setting_key)}" type="text" value="${esc(s.setting_val || '')}" data-key="${esc(s.setting_key)}"/>`
               }
             </div>`).join('')}
@@ -676,7 +985,7 @@ async function renderSettingsPage() {
       </div>`).join('')}
     </div>
     <div style="display:flex;justify-content:flex-end;margin-top:6px">
-      <button class="btn btn-primary btn-lg" onclick="saveAllSettings()"><i class="fas fa-save"></i> Save All Changes</button>
+      <button class="btn btn-primary" onclick="saveAllSettings()"><i class="fas fa-save"></i> Save All Changes</button>
     </div>`);
 }
 
@@ -691,7 +1000,7 @@ function toggleGroup(id) {
 }
 
 async function saveAllSettings() {
-    const inputs = document.querySelectorAll('[data-key]');
+    const inputs   = document.querySelectorAll('[data-key]');
     const settings = {};
     inputs.forEach(el => { settings[el.dataset.key] = el.value; });
 
@@ -699,7 +1008,7 @@ async function saveAllSettings() {
     if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...'; }
 
     const fd = new FormData();
-    fd.append('action', 'save_settings');
+    fd.append('action',   'save_settings');
     fd.append('settings', JSON.stringify(settings));
 
     try {
