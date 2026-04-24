@@ -302,7 +302,6 @@ ul { list-style:none; }
     line-height: 1.1;
     margin: 0;
     padding: 0;
-    margin-top: -1px;
 }
 .navbar.scrolled .logo-sub { color: var(--text-light); }
 

@@ -33,8 +33,7 @@ $s = getSettings();
         <div class="nav-logo">
             <span class="logo-icon">🍽️</span>
             <div class="logo-text">
-                <span class="logo-main">The Sarovar Court</span>
-                <span class="logo-sub">Multicuisine Restaurant · Rourkela</span>
+                <span class="logo-main">The Sarovar Court</span><span class="logo-sub">Multicuisine Restaurant · Rourkela</span>
             </div>
         </div>
         <ul class="nav-links" id="navLinks">
@@ -663,8 +662,7 @@ $s = getSettings();
                     <div class="footer-logo">
                         <span>🍽️</span>
                         <div>
-                            <span class="logo-main">The Sarovar Court</span>
-                            <span class="logo-sub">Multicuisine Restaurant · Rourkela</span>
+                            <span class="logo-main">The Sarovar Court</span><span class="logo-sub">Multicuisine Restaurant · Rourkela</span>
                         </div>
                     </div>
                     <p>Experience the finest flavors of India in the heart of Rourkela.
