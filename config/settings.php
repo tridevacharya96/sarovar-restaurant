@@ -25,7 +25,7 @@ function getSettings(): array {
 
     // Fallback defaults so page never breaks
     $defaults = [
-        'restaurant_name'    => 'Sarovar Restaurant',
+        'restaurant_name'    => 'The Sarovar Court',
         'tagline'            => 'Experience the finest flavors of India in the heart of Rourkela',
         'about_text_1'       => 'Nestled in the vibrant city of Rourkela, Sarovar Restaurant has been a beacon of authentic Indian cuisine for over 15 years.',
         'about_text_2'       => 'Our master chefs bring decades of experience, crafting each dish with the finest locally sourced ingredients.',
@@ -49,7 +49,7 @@ function getSettings(): array {
         'social_twitter'     => '#',
         'social_whatsapp'    => '#',
         'social_youtube'     => '#',
-        'meta_description'   => 'Sarovar Restaurant – Authentic Indian cuisine in Rourkela.',
+        'meta_description'   => 'The Sarovar Court – Authentic Multicuisine Restaurant in Rourkela.',
         'google_maps_embed'  => '',
     ];
 

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Events & Celebrations – Sarovar Restaurant, Rourkela</title>
+    <title>Events & Celebrations – The Sarovar Court, Rourkela</title>
     <link rel="stylesheet" href="css/style.css"/>
     <link rel="stylesheet" href="css/events.css"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
@@ -17,8 +17,8 @@
         <div class="nav-logo">
             <span class="logo-icon">🍽️</span>
             <div class="logo-text">
-                <span class="logo-main">Sarovar</span>
-                <span class="logo-sub">Restaurant · Rourkela</span>
+                <span class="logo-main">The Sarovar Court</span>
+                <span class="logo-sub">Multicuisine Restaurant · Rourkela</span>
             </div>
         </div>
         <ul class="nav-links" id="navLinks">
@@ -58,7 +58,7 @@
     <div class="ev-hero-content">
         <span class="ev-hero-tag"><i class="fas fa-star"></i> Private Events & Celebrations</span>
         <h1>Make Your <span>Special Day</span><br/>Truly Unforgettable</h1>
-        <p>From intimate celebrations to grand weddings — Sarovar offers exclusive venue packages with world-class catering and personalised service in the heart of Rourkela.</p>
+        <p>From intimate celebrations to grand weddings — The Sarovar Court offers exclusive venue packages with world-class catering and personalised service in the heart of Rourkela.</p>
         <div class="ev-hero-stats">
             <div class="ev-stat"><span class="ev-stat-num">500+</span><span class="ev-stat-label">Events Hosted</span></div>
             <div class="ev-stat-divider"></div>
@@ -126,7 +126,7 @@
     <div class="container">
         <div class="section-header">
             <div class="section-label">Why Choose Us</div>
-            <h2 class="section-title">The <span>Sarovar</span> Difference</h2>
+            <h2 class="section-title">The <span>Sarovar Court</span> Difference</h2>
             <p class="section-subtitle">Everything you need for a perfect event, under one roof</p>
         </div>
         <div class="ev-why-grid">
@@ -150,7 +150,7 @@
                 <p>Fill in the form and our events team will get back to you within 24 hours with a personalised quote and availability confirmation.</p>
                 <div class="ev-contact-items">
                     <div class="ev-contact-item"><i class="fas fa-phone"></i><div><strong>Call Us</strong><span>+91 98765 43210</span></div></div>
-                    <div class="ev-contact-item"><i class="fas fa-envelope"></i><div><strong>Email Us</strong><span>events@sarovar.com</span></div></div>
+                    <div class="ev-contact-item"><i class="fas fa-envelope"></i><div><strong>Email Us</strong><span>events@thesarovarcourt.com</span></div></div>
                     <div class="ev-contact-item"><i class="fas fa-map-marker-alt"></i><div><strong>Visit Us</strong><span>Ispat Market, Ambagan Circle, Bank Street, Sector 19, Rourkela – 769005</span></div></div>
                 </div>
                 <div class="ev-advance-note">
@@ -251,7 +251,7 @@
 <footer class="footer">
     <div class="footer-bottom">
         <div class="container">
-            <p>&copy; 2026 Sarovar Restaurant, Rourkela. All Rights Reserved.</p>
+            <p>© 2026 The Sarovar Court – Multicuisine Restaurant, Rourkela. All Rights Reserved.</p>
             <p><a href="index.html" style="color:inherit">← Back to main site</a></p>
         </div>
     </div>
@@ -292,7 +292,7 @@
         <div class="modal-header">
             <div class="modal-logo">🍽️</div>
             <h2>Welcome Back!</h2>
-            <p>Login to your Sarovar account</p>
+            <p>Login to your Sarovar Court account</p>
         </div>
         <form id="loginForm" class="modal-form">
             <div class="form-group">

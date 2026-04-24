@@ -31,8 +31,8 @@ $s = getSettings();
         <div class="nav-logo">
             <span class="logo-icon">🍽️</span>
             <div class="logo-text">
-                <span class="logo-main">Sarovar</span>
-                <span class="logo-sub">Restaurant · Rourkela</span>
+                <span class="logo-main">The Sarovar Court</span>
+                <span class="logo-sub">Multicuisine Restaurant · Rourkela</span>
             </div>
         </div>
         <ul class="nav-links" id="navLinks">
@@ -83,7 +83,7 @@ $s = getSettings();
     <div class="hero-overlay"></div>
     <div class="hero-content">
         <p class="hero-tagline">Welcome to</p>
-        <h1 class="hero-title"><?= setting('restaurant_name') ?><br/><span>Restaurant</span></h1>
+        <h1 class="hero-title"><?= setting('restaurant_name') ?></h1>
         <p class="hero-subtitle"><?= setting('tagline') ?></p>
         <div class="hero-badges">
             <span><i class="fas fa-star"></i> Premium Dining</span>
@@ -684,8 +684,8 @@ $s = getSettings();
                     <div class="footer-logo">
                         <span>🍽️</span>
                         <div>
-                            <span class="logo-main">Sarovar</span>
-                            <span class="logo-sub">Restaurant · Rourkela</span>
+                            <span class="logo-main">The Sarovar Court</span>
+                            <span class="logo-sub">Multicuisine Restaurant · Rourkela</span>
                         </div>
                     </div>
                     <p>Experience the finest flavors of India in the heart of Rourkela.
@@ -743,7 +743,7 @@ $s = getSettings();
     </div>
     <div class="footer-bottom">
         <div class="container">
-            <p>&copy; 2026 Sarovar Restaurant, Rourkela. All Rights Reserved.</p>
+            <p>&copy; 2026 The Sarovar Court – Multicuisine Restaurant, Rourkela. All Rights Reserved.</p>
             <p>Designed with <i class="fas fa-heart" style="color:#e74c3c"></i> for food lovers</p>
         </div>
     </div>
@@ -847,7 +847,7 @@ $s = getSettings();
         </button>
         <div class="modal-header">
             <h2>🍽️ Complete Menu</h2>
-            <p>Sarovar Restaurant – Rourkela</p>
+            <p>The Sarovar Court – Multicuisine Restaurant, Rourkela</p>
         </div>
         <div class="full-menu-filter" id="fullMenuFilter"></div>
         <div class="full-menu-grid" id="fullMenuGrid">
