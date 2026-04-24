@@ -268,7 +268,15 @@ ul { list-style:none; }
     text-decoration: none;
 }
 .logo-icon { font-size: 1.4rem; flex-shrink: 0; }
-.logo-text  { display: flex; flex-direction: column; line-height: 1.0; gap: 1px; min-width: 0; margin: 0; padding: 0; }
+.logo-text  {
+    display: flex;
+    flex-direction: column;
+    line-height: 1;
+    gap: 0;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+}
 .logo-main  {
     font-family: var(--font-heading);
     font-size: 0.88rem;
@@ -280,6 +288,9 @@ ul { list-style:none; }
     text-overflow: ellipsis;
     max-width: 160px;
     letter-spacing: 0.01em;
+    line-height: 1.1;
+    margin: 0;
+    padding: 0;
 }
 .navbar.scrolled .logo-main { color: var(--dark); }
 .logo-sub {
@@ -288,6 +299,10 @@ ul { list-style:none; }
     letter-spacing: 0.3px;
     transition: var(--transition);
     white-space: nowrap;
+    line-height: 1.1;
+    margin: 0;
+    padding: 0;
+    margin-top: -1px;
 }
 .navbar.scrolled .logo-sub { color: var(--text-light); }
 
@@ -1618,9 +1633,9 @@ ul { list-style:none; }
     margin-bottom: 14px;
     font-size: 1.4rem;
 }
-.footer-brand .footer-logo .logo-text { line-height: 1.0; gap: 0; }
-.footer-brand .footer-logo .logo-main { color: var(--white); font-size: 0.92rem; white-space: nowrap; }
-.footer-brand .footer-logo .logo-sub  { color: rgba(255,255,255,0.5); font-size: 0.58rem; margin-top: 2px; }
+.footer-brand .footer-logo .logo-text { line-height: 1.0; gap: 0; margin: 0; padding: 0; }
+.footer-brand .footer-logo .logo-main { color: var(--white); font-size: 0.92rem; white-space: nowrap; line-height: 1.1; margin: 0; padding: 0; }
+.footer-brand .footer-logo .logo-sub  { color: rgba(255,255,255,0.5); font-size: 0.58rem; line-height: 1.1; margin: 0; padding: 0; margin-top: -1px; }
 .footer-brand p {
     color: rgba(255,255,255,0.55);
     font-size: 0.88rem;
