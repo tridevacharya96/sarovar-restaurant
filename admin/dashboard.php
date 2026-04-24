@@ -53,6 +53,9 @@ $admin = getCurrentAdmin();
                 <i class="fas fa-users"></i> Customers
             </a>
             <div class="sb-section">Settings</div>
+            <a class="nav-item" data-page="settings" href="#">
+                <i class="fas fa-cog"></i> Site Settings
+            </a>
             <a class="nav-item" data-page="coupons" href="#">
                 <i class="fas fa-tag"></i> Coupons
             </a>
