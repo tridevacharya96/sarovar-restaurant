@@ -36,11 +36,11 @@ function loadPage(page) {
     document.querySelectorAll('.nav-item').forEach(i => {
         i.classList.toggle('active', i.dataset.page === page);
     });
-    const titles = {dashboard:'Dashboard',events:'Event bookings',orders:'Orders',reservations:'Reservations',menu:'Menu items',customers:'Customers',reports:'Reports',coupons:'Coupons',messages:'Messages',settings:'Site Settings'};
+    const titles = {dashboard:'Dashboard',events:'Event bookings',orders:'Orders',reservations:'Reservations',menu:'Menu items',customers:'Customers',reports:'Reports',coupons:'Coupons',messages:'Messages',settings:'Site Settings',reviews:'Reviews & Ratings'};
     document.getElementById('pageTitle').textContent = titles[page] || page;
     document.getElementById('pageSub').textContent   = '';
     document.getElementById('content').innerHTML = '<div class="page-loader"><i class="fas fa-spinner fa-spin"></i></div>';
-    const fn = {dashboard:renderDashboard,orders:renderOrdersPage,reservations:renderReservationsPage,menu:renderMenuPage,customers:renderCustomersPage,reports:renderReportsPage,messages:renderMessagesPage,events:renderEventsPage,coupons:renderCouponsPage,settings:renderSettingsPage};
+    const fn = {dashboard:renderDashboard,orders:renderOrdersPage,reservations:renderReservationsPage,menu:renderMenuPage,customers:renderCustomersPage,reports:renderReportsPage,messages:renderMessagesPage,events:renderEventsPage,coupons:renderCouponsPage,settings:renderSettingsPage,reviews:renderReviewsPage};
     if (fn[page]) fn[page]();
 }
 
@@ -950,10 +950,11 @@ async function renderSettingsPage() {
         social:  '🌐  Social Media Links',
         payment:  '💳  Payment Gateway',
         shipping: '🚚  Shipping & Delivery',
+        reviews:  '⭐  Reviews & Ratings',
         seo:     '🔍  SEO & Maps',
     };
 
-    const groupOrder = ['general','contact','hours','social','payment','shipping','seo'];
+    const groupOrder = ['general','contact','hours','social','payment','shipping','reviews','seo'];
 
     set('content', `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
@@ -1025,4 +1026,131 @@ async function saveAllSettings() {
     } finally {
         if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-save"></i> Save All Changes'; }
     }
+}
+
+/* ============================================================ REVIEWS ADMIN */
+async function renderReviewsPage() {
+    const [pending, approved] = await Promise.all([
+        apiFetch('get_reviews', {filter:'pending'}),
+        apiFetch('get_reviews', {filter:'approved'}),
+    ]);
+
+    const pendingCount  = pending?.length  || 0;
+    const approvedCount = approved?.length || 0;
+
+    set('content', `
+    <div class="metrics" style="grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:16px">
+      <div class="metric"><div class="metric-accent" style="background:#EF9F27"></div>
+        <div class="metric-label">Pending approval</div>
+        <div class="metric-value">${pendingCount}</div>
+        <div class="metric-trend ${pendingCount>0?'trend-down':'trend-up'}">${pendingCount>0?'Needs review':'All clear'}</div>
+      </div>
+      <div class="metric"><div class="metric-accent" style="background:#1D9E75"></div>
+        <div class="metric-label">Approved</div>
+        <div class="metric-value">${approvedCount}</div>
+        <div class="metric-trend trend-up"><i class="fas fa-check"></i> Published on site</div>
+      </div>
+      <div class="metric"><div class="metric-accent" style="background:#D85A30"></div>
+        <div class="metric-label">Total reviews</div>
+        <div class="metric-value">${pendingCount + approvedCount}</div>
+      </div>
+    </div>
+    <div class="filter-row" id="reviewFilters">
+      ${['pending','approved','rejected','all'].map(f =>
+        `<div class="filter-chip ${f==='pending'?'active':''}" onclick="filterReviews('${f}',this)">${f.charAt(0).toUpperCase()+f.slice(1)}</div>`
+      ).join('')}
+    </div>
+    <div class="table-wrap">
+      <table class="admin-table">
+        <thead><tr>
+          <th>Reviewer</th><th>Rating</th><th style="width:35%">Review</th>
+          <th>Source</th><th>Date</th><th>Status</th><th>Action</th>
+        </tr></thead>
+        <tbody id="reviewsTbody">${renderReviewRows(pending || [])}</tbody>
+      </table>
+    </div>`);
+}
+
+function renderReviewRows(data) {
+    if (!data.length) return '<tr><td colspan="7" style="text-align:center;padding:32px;color:rgba(255,255,255,0.2)">No reviews found</td></tr>';
+    const stars = r => '★'.repeat(r) + '☆'.repeat(5-r);
+    return data.map(r => `<tr>
+      <td>
+        <div class="bold">${esc(r.name)}</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.3)">${esc(r.email||'')}</div>
+      </td>
+      <td style="color:#F5A623;font-size:14px">${stars(r.rating)}</td>
+      <td style="font-size:12px;max-width:200px">${esc((r.review_text||'').substring(0,120))}${(r.review_text||'').length>120?'…':''}</td>
+      <td><span class="pill ${r.source==='google'?'pill-confirmed':'pill-preparing'}">${r.source}</span></td>
+      <td style="font-size:11px">${fmtDate(r.created_at)}</td>
+      <td>${pill(r.status)}</td>
+      <td style="display:flex;gap:4px;flex-wrap:wrap">
+        ${r.status!=='approved'  ? `<button class="btn btn-success btn-sm" onclick="quickReview(${r.id},'approved')"><i class="fas fa-check"></i></button>` : ''}
+        ${r.status!=='rejected'  ? `<button class="btn btn-danger btn-sm"  onclick="quickReview(${r.id},'rejected')"><i class="fas fa-times"></i></button>` : ''}
+        <button class="btn btn-ghost btn-sm" onclick="openReviewEdit(${r.id},'${r.status}',\`${esc(r.admin_reply||'')}\`,${r.is_featured})">
+          <i class="fas fa-edit"></i>
+        </button>
+      </td>
+    </tr>`).join('');
+}
+
+async function filterReviews(filter, el) {
+    document.querySelectorAll('#reviewFilters .filter-chip').forEach(c=>c.classList.remove('active'));
+    el.classList.add('active');
+    const data = await apiFetch('get_reviews', {filter});
+    const tb = document.getElementById('reviewsTbody');
+    if (tb && data) tb.innerHTML = renderReviewRows(data);
+}
+
+async function quickReview(id, status) {
+    const res = await apiPost('update_review', {review_id:id, status, admin_reply:'', is_featured:0});
+    if (res?.success) { toast(`Review ${status}`, 'success'); renderReviewsPage(); }
+    else toast('Failed', 'error');
+}
+
+function openReviewEdit(id, status, reply, featured) {
+    document.getElementById('modalBox').innerHTML = `
+    <h3><i class="fas fa-star"></i> Manage Review #${id}</h3>
+    <div class="form-group" style="margin-bottom:14px">
+      <label>Status</label>
+      <select id="rvStatus">
+        ${['pending','approved','rejected'].map(s =>
+          `<option value="${s}" ${s===status?'selected':''}>${s.charAt(0).toUpperCase()+s.slice(1)}</option>`
+        ).join('')}
+      </select>
+    </div>
+    <div class="form-group" style="margin-bottom:14px">
+      <label>Featured (shown first)</label>
+      <select id="rvFeatured">
+        <option value="0" ${!featured?'selected':''}>No</option>
+        <option value="1" ${featured?'selected':''}>Yes</option>
+      </select>
+    </div>
+    <div class="form-group" style="margin-bottom:18px">
+      <label>Admin Reply (optional — visible to customers)</label>
+      <textarea id="rvReply" rows="3">${reply}</textarea>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-danger" onclick="confirmDeleteReview(${id})"><i class="fas fa-trash"></i> Delete</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveReview(${id})"><i class="fas fa-save"></i> Save</button>
+    </div>`;
+    openModal();
+}
+
+async function saveReview(id) {
+    const res = await apiPost('update_review', {
+        review_id:   id,
+        status:      document.getElementById('rvStatus').value,
+        admin_reply: document.getElementById('rvReply').value,
+        is_featured: document.getElementById('rvFeatured').value,
+    });
+    if (res?.success) { toast('Review updated', 'success'); closeModal(); renderReviewsPage(); }
+    else toast(res?.error || 'Failed', 'error');
+}
+
+async function confirmDeleteReview(id) {
+    if (!confirm('Permanently delete this review?')) return;
+    const res = await apiPost('delete_review', {review_id:id});
+    if (res?.success) { toast('Review deleted', 'info'); closeModal(); renderReviewsPage(); }
 }

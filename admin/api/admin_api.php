@@ -33,6 +33,9 @@ switch ($action) {
     case 'delete_coupon':     deleteCoupon();          break;
     case 'get_settings':      getSettingsAdmin();      break;
     case 'save_settings':     saveSettings();          break;
+    case 'get_reviews':       getReviewsAdmin();       break;
+    case 'update_review':     updateReview();          break;
+    case 'delete_review':     deleteReview();          break;
     case 'event_bookings':        getEventBookings();         break;
     case 'update_event_booking':  updateEventBooking();       break;
     case 'event_booking_stats':   getEventBookingStats();     break;
@@ -539,6 +542,41 @@ function saveSettings() {
         if ($stmt->execute()) $saved++;
     }
     echo json_encode(['success' => true, 'saved' => $saved, 'message' => "$saved settings saved successfully"]);
+    $conn->close();
+}
+
+/* ============================================================ REVIEWS ADMIN */
+function getReviewsAdmin() {
+    $conn   = getConnection();
+    $check  = $conn->query("SHOW TABLES LIKE 'reviews'");
+    if (!$check || $check->num_rows === 0) { echo json_encode([]); $conn->close(); return; }
+    $filter = $_GET['filter'] ?? 'pending';
+    $where  = $filter === 'all' ? '' : "WHERE status='" . mysqli_real_escape_string($conn,$filter) . "'";
+    $q      = $conn->query("SELECT * FROM reviews $where ORDER BY created_at DESC LIMIT 200");
+    $rows   = [];
+    while ($r = $q->fetch_assoc()) $rows[] = $r;
+    echo json_encode($rows);
+    $conn->close();
+}
+
+function updateReview() {
+    $conn       = getConnection();
+    $id         = intval($_POST['review_id']   ?? 0);
+    $status     = mysqli_real_escape_string($conn, $_POST['status']      ?? '');
+    $reply      = mysqli_real_escape_string($conn, $_POST['admin_reply'] ?? '');
+    $featured   = intval($_POST['is_featured'] ?? 0);
+    $allowed    = ['pending','approved','rejected'];
+    if (!in_array($status, $allowed)) { echo json_encode(['error'=>'Invalid status']); return; }
+    $conn->query("UPDATE reviews SET status='$status', admin_reply='$reply', is_featured=$featured WHERE id=$id");
+    echo json_encode(['success' => true]);
+    $conn->close();
+}
+
+function deleteReview() {
+    $conn = getConnection();
+    $id   = intval($_POST['review_id'] ?? 0);
+    $conn->query("DELETE FROM reviews WHERE id=$id");
+    echo json_encode(['success' => true]);
     $conn->close();
 }
 ?>

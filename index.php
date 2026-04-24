@@ -460,103 +460,60 @@ $s = getSettings();
 </section>
 
 <!-- ===== TESTIMONIALS ===== -->
-<section class="testimonials">
+<!-- ===== REVIEWS & RATINGS ===== -->
+<section class="reviews-section" id="reviews">
     <div class="container">
         <div class="section-header">
-            <div class="section-label">Testimonials</div>
+            <div class="section-label">Reviews & Ratings</div>
             <h2 class="section-title">What Our <span>Guests Say</span></h2>
+            <p class="section-subtitle">Real experiences from our valued customers</p>
         </div>
-        <div class="testimonials-slider" id="testimonialsSlider">
-            <div class="testimonial-card active">
-                <div class="testimonial-stars">
-                    <i class="fas fa-star"></i><i class="fas fa-star"></i>
-                    <i class="fas fa-star"></i><i class="fas fa-star"></i>
-                    <i class="fas fa-star"></i>
-                </div>
-                <p class="testimonial-text">
-                    "Sarovar is hands down the best restaurant in Rourkela! The Chicken Biryani
-                    is absolutely divine and the service is impeccable. A must-visit!"
-                </p>
-                <div class="testimonial-author">
-                    <div class="author-avatar">RK</div>
-                    <div class="author-info">
-                        <strong>Rajesh Kumar</strong>
-                        <span>Regular Customer</span>
-                    </div>
-                </div>
+
+        <!-- Rating Summary -->
+        <div class="reviews-summary" id="reviewsSummary">
+            <div class="reviews-summary-left">
+                <div class="reviews-avg-score" id="reviewsAvgScore">—</div>
+                <div class="reviews-stars" id="reviewsAvgStars"></div>
+                <div class="reviews-total-count" id="reviewsTotalCount">Loading...</div>
+                <a href="#" id="googleReviewLink" class="btn-google-review" target="_blank" style="display:none">
+                    <img src="https://www.gstatic.com/images/branding/product/1x/googleg_48dp.png" alt="Google" width="18" height="18"/>
+                    Review on Google
+                </a>
             </div>
-            <div class="testimonial-card">
-                <div class="testimonial-stars">
-                    <i class="fas fa-star"></i><i class="fas fa-star"></i>
-                    <i class="fas fa-star"></i><i class="fas fa-star"></i>
-                    <i class="fas fa-star"></i>
-                </div>
-                <p class="testimonial-text">
-                    "We celebrated our anniversary here and it was magical. The ambiance,
-                    the food, the staff — everything was perfect. Highly recommended!"
-                </p>
-                <div class="testimonial-author">
-                    <div class="author-avatar">PM</div>
-                    <div class="author-info">
-                        <strong>Priya Mishra</strong>
-                        <span>Food Blogger</span>
-                    </div>
-                </div>
-            </div>
-            <div class="testimonial-card">
-                <div class="testimonial-stars">
-                    <i class="fas fa-star"></i><i class="fas fa-star"></i>
-                    <i class="fas fa-star"></i><i class="fas fa-star"></i>
-                    <i class="fas fa-star-half-alt"></i>
-                </div>
-                <p class="testimonial-text">
-                    "The Dal Makhani and Butter Naan combo is out of this world! Fast delivery
-                    and food arrives hot. Sarovar never disappoints!"
-                </p>
-                <div class="testimonial-author">
-                    <div class="author-avatar">AS</div>
-                    <div class="author-info">
-                        <strong>Amit Sharma</strong>
-                        <span>Corporate Client</span>
-                    </div>
-                </div>
-            </div>
-            <div class="testimonial-card">
-                <div class="testimonial-stars">
-                    <i class="fas fa-star"></i><i class="fas fa-star"></i>
-                    <i class="fas fa-star"></i><i class="fas fa-star"></i>
-                    <i class="fas fa-star"></i>
-                </div>
-                <p class="testimonial-text">
-                    "Best vegetarian options in Rourkela! The Paneer Tikka and Veg Biryani
-                    are absolutely delicious. Great value for money!"
-                </p>
-                <div class="testimonial-author">
-                    <div class="author-avatar">SP</div>
-                    <div class="author-info">
-                        <strong>Sunita Patel</strong>
-                        <span>Family Customer</span>
-                    </div>
-                </div>
-            </div>
+            <div class="reviews-summary-right" id="reviewsBreakdown"></div>
         </div>
-        <div class="testimonial-controls">
-            <button class="testimonial-prev" onclick="prevTestimonial()">
-                <i class="fas fa-chevron-left"></i>
+
+        <!-- Source Tabs -->
+        <div class="reviews-tabs">
+            <button class="reviews-tab active" onclick="switchReviewTab('all',this)">
+                <i class="fas fa-star"></i> All Reviews
             </button>
-            <div class="testimonial-dots" id="testimonialDots">
-                <span class="dot active"></span>
-                <span class="dot"></span>
-                <span class="dot"></span>
-                <span class="dot"></span>
-            </div>
-            <button class="testimonial-next" onclick="nextTestimonial()">
-                <i class="fas fa-chevron-right"></i>
+            <button class="reviews-tab" onclick="switchReviewTab('website',this)">
+                <i class="fas fa-globe"></i> Website
+            </button>
+            <button class="reviews-tab" onclick="switchReviewTab('google',this)" id="googleTab">
+                <img src="https://www.gstatic.com/images/branding/product/1x/googleg_48dp.png" alt="Google" width="16" height="16"/> Google
+            </button>
+        </div>
+
+        <!-- Reviews Grid -->
+        <div class="reviews-grid" id="reviewsGrid">
+            <div class="reviews-loading"><i class="fas fa-spinner fa-spin"></i> Loading reviews...</div>
+        </div>
+
+        <!-- Load More -->
+        <div class="reviews-actions">
+            <button class="btn btn-outline" id="loadMoreReviews" onclick="loadMoreReviews()" style="display:none">
+                Load More Reviews
+            </button>
+            <button class="btn btn-primary" onclick="openModal('reviewModal')">
+                <i class="fas fa-pencil-alt"></i> Write a Review
             </button>
         </div>
     </div>
 </section>
 
+<!-- ===== CONTACT ===== -->
 <!-- ===== CONTACT ===== -->
 <section class="contact-section" id="contact">
     <div class="container">
@@ -1005,6 +962,74 @@ $s = getSettings();
     <i class="fas fa-chevron-up"></i>
 </button>
 
+
+<!-- ===== REVIEW MODAL ===== -->
+<div class="modal-overlay" id="reviewModal">
+    <div class="modal">
+        <button class="modal-close" onclick="closeModal('reviewModal')"><i class="fas fa-times"></i></button>
+        <div class="modal-header">
+            <div class="modal-logo">⭐</div>
+            <h2>Write a Review</h2>
+            <p>Share your experience at The Sarovar Court</p>
+        </div>
+        <form id="reviewForm" class="modal-form">
+            <!-- Star Rating Picker -->
+            <div class="review-star-picker">
+                <p>Your Rating *</p>
+                <div class="star-picker" id="starPicker">
+                    <i class="fas fa-star" data-val="1"></i>
+                    <i class="fas fa-star" data-val="2"></i>
+                    <i class="fas fa-star" data-val="3"></i>
+                    <i class="fas fa-star" data-val="4"></i>
+                    <i class="fas fa-star" data-val="5"></i>
+                </div>
+                <input type="hidden" name="rating" id="ratingInput" value="0"/>
+            </div>
+            <div class="form-group">
+                <label><i class="fas fa-user"></i> Your Name *</label>
+                <input type="text" name="name" placeholder="Your name" required/>
+            </div>
+            <div class="form-group">
+                <label><i class="fas fa-envelope"></i> Email (optional)</label>
+                <input type="email" name="email" placeholder="your@email.com"/>
+            </div>
+            <div class="form-group">
+                <label><i class="fas fa-comment"></i> Your Review *</label>
+                <textarea name="review_text" rows="4" placeholder="Tell us about your experience..." required></textarea>
+            </div>
+            <div id="reviewError" class="form-error" style="display:none"></div>
+            <button type="submit" class="btn btn-primary btn-full">
+                <i class="fas fa-paper-plane"></i> Submit Review
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- ===== GOOGLE REVIEW PROMPT MODAL ===== -->
+<div class="modal-overlay" id="googlePromptModal">
+    <div class="modal modal-small">
+        <div class="modal-header" style="text-align:center">
+            <div style="font-size:48px;margin-bottom:12px">🎉</div>
+            <h2>Thank You!</h2>
+            <p>Your review has been submitted and is awaiting approval.</p>
+        </div>
+        <div class="google-prompt-box">
+            <img src="https://www.gstatic.com/images/branding/product/1x/googleg_48dp.png" alt="Google" width="32"/>
+            <div>
+                <strong>Also review us on Google?</strong>
+                <p>Help more people discover The Sarovar Court!</p>
+            </div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:16px">
+            <button class="btn btn-outline" style="flex:1" onclick="closeModal('googlePromptModal')">Maybe later</button>
+            <a id="googlePromptLink" href="#" target="_blank" class="btn btn-primary" style="flex:1;text-decoration:none;justify-content:center;display:flex;align-items:center;gap:6px" onclick="closeModal('googlePromptModal')">
+                <img src="https://www.gstatic.com/images/branding/product/1x/googleg_48dp.png" alt="" width="16"/> Review on Google
+            </a>
+        </div>
+    </div>
+</div>
+
 <script src="js/main.js"></script>
+<script src="js/reviews.js"></script>
 </body>
 </html>
