@@ -39,9 +39,9 @@ $admin = getCurrentAdmin();
                 <span class="nav-badge" id="pendingBadge">0</span>
             </a>
             <a class="nav-item" data-page="events" href="#">
-             <i class="fas fa-calendar-star"></i> Event bookings
-             <span class="nav-badge nav-badge-gray" id="pendingEvtBadge">0</span>
-           </a>
+                <i class="fas fa-calendar-check"></i> Event bookings
+                <span class="nav-badge nav-badge-gray" id="pendingEvtBadge">0</span>
+            </a>
             <a class="nav-item" data-page="reservations" href="#">
                 <i class="fas fa-calendar-alt"></i> Reservations
                 <span class="nav-badge nav-badge-gray" id="pendingResBadge">0</span>
