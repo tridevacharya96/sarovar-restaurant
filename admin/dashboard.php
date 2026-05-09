@@ -104,7 +104,7 @@ $admin = getCurrentAdmin();
                 <button class="topbar-icon-btn" onclick="refreshCurrent()" title="Refresh">
                     <i class="fas fa-sync-alt" id="refreshIcon"></i>
                 </button>
-                <a href="../index.html" class="topbar-icon-btn" title="View site" target="_blank">
+                <a href="../index.php" class="topbar-icon-btn" title="View site" target="_blank">
                     <i class="fas fa-external-link-alt"></i>
                 </a>
             </div>
