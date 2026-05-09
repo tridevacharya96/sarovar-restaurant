@@ -107,7 +107,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 <div class="login-wrap">
-    <a href="../index.html" class="back-link"><i class="fas fa-arrow-left"></i> Back to site</a>
+    <a href="../index.php" class="back-link"><i class="fas fa-arrow-left"></i> Back to site</a>
     <div class="login-logo">
         <span class="login-logo-icon">🍽️</span>
         <h1>Sarovar</h1>
