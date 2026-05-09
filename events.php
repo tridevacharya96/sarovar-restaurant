@@ -22,11 +22,11 @@
             </div>
         </div>
         <ul class="nav-links" id="navLinks">
-            <li><a href="index.html#home"        class="nav-link">Home</a></li>
-            <li><a href="index.html#menu"        class="nav-link">Menu</a></li>
-            <li><a href="index.html#reservation" class="nav-link">Reserve a Table</a></li>
+            <li><a href="index.php#home"        class="nav-link">Home</a></li>
+            <li><a href="index.php#menu"        class="nav-link">Menu</a></li>
+            <li><a href="index.php#reservation" class="nav-link">Reserve a Table</a></li>
             <li><a href="events.php"             class="nav-link active">Events</a></li>
-            <li><a href="index.html#contact"     class="nav-link">Contact</a></li>
+            <li><a href="index.php#contact"     class="nav-link">Contact</a></li>
         </ul>
         <div class="nav-actions">
             <div class="auth-buttons" id="authButtons">
@@ -41,7 +41,7 @@
                 </button>
                 <div class="user-dropdown" id="userDropdown">
                     <a href="#" onclick="showMyEventBookings()"><i class="fas fa-calendar-star"></i> My Event Bookings</a>
-                    <a href="index.html" onclick=""><i class="fas fa-home"></i> Main Site</a>
+                    <a href="index.php" onclick=""><i class="fas fa-home"></i> Main Site</a>
                     <a href="#" onclick="logoutUser()"><i class="fas fa-sign-out-alt"></i> Logout</a>
                 </div>
             </div>
@@ -252,7 +252,7 @@
     <div class="footer-bottom">
         <div class="container">
             <p>© 2026 The Sarovar Court – Multicuisine Restaurant, Rourkela. All Rights Reserved.</p>
-            <p><a href="index.html" style="color:inherit">← Back to main site</a></p>
+            <p><a href="index.php" style="color:inherit">← Back to main site</a></p>
         </div>
     </div>
 </footer>

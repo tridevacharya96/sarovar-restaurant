@@ -3,7 +3,7 @@ require_once 'config/settings.php';
 $s = getSettings();
 ?>
 <!DOCTYPE html>
-<!-- index.html -->
+<!-- index.php -->
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
@@ -531,6 +531,44 @@ $s = getSettings();
 
 <!-- ===== CONTACT ===== -->
 <!-- ===== CONTACT ===== -->
+<section class="events-section" id="events">
+    <div class="container">
+        <div class="section-header">
+            <div class="section-label">Private Events</div>
+            <h2 class="section-title">Host Your <span>Dream Event</span></h2>
+            <p class="section-subtitle">Weddings, birthdays, corporate events — we make every occasion extraordinary</p>
+        </div>
+        <div class="events-preview-grid">
+            <div class="events-preview-card" onclick="window.location.href='events.php'">
+                <div class="events-preview-icon"><i class="fas fa-ring"></i></div>
+                <h3>Weddings & Receptions</h3>
+                <p>Luxurious setups for up to 500 guests with floral décor, live counters, and dedicated coordination.</p>
+            </div>
+            <div class="events-preview-card" onclick="window.location.href='events.php'">
+                <div class="events-preview-icon"><i class="fas fa-birthday-cake"></i></div>
+                <h3>Birthdays & Anniversaries</h3>
+                <p>Celebrate life's milestones with themed décor, custom menus, and an unforgettable atmosphere.</p>
+            </div>
+            <div class="events-preview-card" onclick="window.location.href='events.php'">
+                <div class="events-preview-icon"><i class="fas fa-briefcase"></i></div>
+                <h3>Corporate Events</h3>
+                <p>Professional venue setup for conferences, team dinners, product launches, and award ceremonies.</p>
+            </div>
+        </div>
+        <div class="events-cta">
+            <div style="display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap">
+                <div style="text-align:center;color:rgba(255,255,255,0.4);font-size:13px">
+                    <strong style="color:#fff;display:block;font-size:18px">Packages from ₹75,000</strong>
+                    Silver · Gold · Platinum — or fully custom
+                </div>
+                <a href="events.php" class="btn btn-primary btn-lg">
+                    <i class="fas fa-calendar-check"></i> Explore & Book Events
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
 <section class="contact-section" id="contact">
     <div class="container">
         <div class="section-header">
@@ -614,43 +652,6 @@ $s = getSettings();
 </section>
 
 <!-- ===== EVENTS SECTION ===== -->
-<section class="events-section" id="events">
-    <div class="container">
-        <div class="section-header">
-            <div class="section-label">Private Events</div>
-            <h2 class="section-title">Host Your <span>Dream Event</span></h2>
-            <p class="section-subtitle">Weddings, birthdays, corporate events — we make every occasion extraordinary</p>
-        </div>
-        <div class="events-preview-grid">
-            <div class="events-preview-card" onclick="window.location.href='events.php'">
-                <div class="events-preview-icon"><i class="fas fa-ring"></i></div>
-                <h3>Weddings & Receptions</h3>
-                <p>Luxurious setups for up to 500 guests with floral décor, live counters, and dedicated coordination.</p>
-            </div>
-            <div class="events-preview-card" onclick="window.location.href='events.php'">
-                <div class="events-preview-icon"><i class="fas fa-birthday-cake"></i></div>
-                <h3>Birthdays & Anniversaries</h3>
-                <p>Celebrate life's milestones with themed décor, custom menus, and an unforgettable atmosphere.</p>
-            </div>
-            <div class="events-preview-card" onclick="window.location.href='events.php'">
-                <div class="events-preview-icon"><i class="fas fa-briefcase"></i></div>
-                <h3>Corporate Events</h3>
-                <p>Professional venue setup for conferences, team dinners, product launches, and award ceremonies.</p>
-            </div>
-        </div>
-        <div class="events-cta">
-            <div style="display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap">
-                <div style="text-align:center;color:rgba(255,255,255,0.4);font-size:13px">
-                    <strong style="color:#fff;display:block;font-size:18px">Packages from ₹75,000</strong>
-                    Silver · Gold · Platinum — or fully custom
-                </div>
-                <a href="events.php" class="btn btn-primary btn-lg">
-                    <i class="fas fa-calendar-check"></i> Explore & Book Events
-                </a>
-            </div>
-        </div>
-    </div>
-</section>
 <!-- ===== END EVENTS SECTION ===== -->
 
 <!-- ===== FOOTER ===== -->

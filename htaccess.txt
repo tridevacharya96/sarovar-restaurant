@@ -1,0 +1,13 @@
+DirectoryIndex index.php index.html
+
+Options -Indexes
+
+# Force index.php as default
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /sarovar-restaurant/
+
+    # Redirect index.html to index.php
+    RewriteCond %{THE_REQUEST} /index\.html[\s?] [NC]
+    RewriteRule ^index\.html$ /sarovar-restaurant/index.php [R=301,L]
+</IfModule>
